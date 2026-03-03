@@ -2,15 +2,17 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../hooks/useAuth'
 import { recordingService, sessionService } from '../../services'
+import { useNavigate } from 'react-router-dom' // 👈 added
 import Button from '../../components/UI/Button.jsx'
 import LoadingSpinner from '../../components/UI/LoadingSpinner.jsx'
 import {
   Video, Search, Eye, Clock, Users,
-  Download, Star, Calendar, Zap, Radio,
-  AlertCircle, RefreshCw, ExternalLink, DownloadCloud,
-  UserPlus, Check, PlayCircle
+  Star, Calendar, Zap, Radio,
+  AlertCircle, RefreshCw,
+  UserPlus, Check, PlayCircle, Youtube
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+
 // Helper functions
 const formatDuration = (seconds) => {
   if (!seconds) return '0:00'
@@ -19,6 +21,7 @@ const formatDuration = (seconds) => {
   const s = Math.floor(seconds % 60)
   return h > 0 ? `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}` : `${m}:${s.toString().padStart(2, '0')}`
 }
+
 const formatDateTime = (date) => {
   if (!date) return 'TBD'
   return new Date(date).toLocaleString('en-US', {
@@ -29,50 +32,57 @@ const formatDateTime = (date) => {
     hour12: true
   })
 }
+
 const StudentRecordings = () => {
   const { t } = useTranslation()
   const { user } = useAuth()
-  const [recordings, setRecordings] = useState([])
+  const navigate = useNavigate() // 👈 added
+  const [videos, setVideos] = useState([])
   const [upcomingSessions, setUpcomingSessions] = useState([])
   const [liveSessions, setLiveSessions] = useState([])
-  const [loading, setLoading] = useState(true) // Fixed line
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [sortBy, setSortBy] = useState('createdAt')
-  const [activeTab, setActiveTab] = useState('recordings')
+  const [activeTab, setActiveTab] = useState('videos')
   const [error, setError] = useState(null)
   const [debugInfo, setDebugInfo] = useState(null)
+
   const studentId = user?.uid
+
   // Stats
   const stats = useMemo(() => {
-    const totalRecordings = recordings.length
-    const totalDuration = recordings.reduce((sum, rec) => sum + (rec.duration || 0), 0)
-    const totalViews = recordings.reduce((sum, rec) => sum + (rec.views || 0), 0)
-    const completedRecordings = recordings.filter(rec => rec.progress >= 95).length
+    const totalVideos = videos.length
+    const totalDuration = videos.reduce((sum, v) => sum + (v.duration || 0), 0)
+    const totalViews = videos.reduce((sum, v) => sum + (v.views || 0), 0)
+    const completedVideos = videos.filter(v => v.progress >= 95).length
     return {
-      totalRecordings,
+      totalVideos,
       totalDuration: formatDuration(totalDuration),
       totalViews,
-      completedRecordings,
-      completionRate: totalRecordings > 0 ? Math.round((completedRecordings / totalRecordings) * 100) : 0,
+      completedVideos,
+      completionRate: totalVideos > 0 ? Math.round((completedVideos / totalVideos) * 100) : 0,
       upcomingCount: upcomingSessions.length,
       liveCount: liveSessions.length
     }
-  }, [recordings, upcomingSessions, liveSessions])
+  }, [videos, upcomingSessions, liveSessions])
+
   // Combined content
   const allContent = useMemo(() => {
     const content = []
-    content.push(...recordings.map(rec => ({ ...rec, type: 'recording' })))
+    content.push(...videos.map(v => ({ ...v, type: 'video' })))
     content.push(...upcomingSessions.map(s => ({ ...s, type: 'upcoming', duration: s.duration || 60 })))
     content.push(...liveSessions.map(s => ({ ...s, type: 'live', duration: s.duration || 60 })))
     return content
-  }, [recordings, upcomingSessions, liveSessions])
+  }, [videos, upcomingSessions, liveSessions])
+
   // Filter & sort
   const filteredContent = useMemo(() => {
     let filtered = [...allContent]
-    if (activeTab === 'recordings') filtered = filtered.filter(i => i.type === 'recording')
+    if (activeTab === 'videos') filtered = filtered.filter(i => i.type === 'video')
     if (activeTab === 'upcoming') filtered = filtered.filter(i => i.type === 'upcoming')
     if (activeTab === 'live') filtered = filtered.filter(i => i.type === 'live')
+
     if (searchTerm) {
       filtered = filtered.filter(i =>
         i.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -81,9 +91,11 @@ const StudentRecordings = () => {
         (i.tags || []).some(t => t.toLowerCase().includes(searchTerm.toLowerCase()))
       )
     }
+
     if (categoryFilter !== 'all') {
       filtered = filtered.filter(i => i.category === categoryFilter)
     }
+
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'title': return a.title?.localeCompare(b.title)
@@ -95,50 +107,13 @@ const StudentRecordings = () => {
     })
     return filtered
   }, [allContent, activeTab, searchTerm, categoryFilter, sortBy])
-  // Extract Drive file ID
-  const getDriveFileId = (url) => {
-    if (!url) return null
-    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/)
-    return match ? match[1] : null
+
+  // ✅ Updated watch function – navigate to detail page
+  const watchVideo = (video) => {
+    navigate(`/recording/${video.id}`)
   }
-  // Watch in Google Drive
-  const watchInDrive = async (recording) => {
-    const fileId = getDriveFileId(recording.recordingUrl)
-    if (!fileId) {
-      alert('Invalid Google Drive link')
-      return
-    }
-    const previewUrl = `https://drive.google.com/file/d/${fileId}/preview`
-    window.open(previewUrl, '_blank', 'noopener,noreferrer')
-    if (recording.id) {
-      try {
-        await recordingService.incrementRecordingViews(recording.id)
-        await recordingService.updateStudentProgress(recording.id, studentId, {
-          progress: 5,
-          lastWatched: new Date()
-        })
-      } catch (err) {
-        console.warn('Progress update failed:', err)
-      }
-    }
-  }
-  // Download
-  const downloadVideo = async (recording) => {
-    const fileId = getDriveFileId(recording.recordingUrl)
-    if (!fileId) {
-      alert('Cannot download: invalid URL')
-      return
-    }
-    const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`
-    const link = document.createElement('a')
-    link.href = downloadUrl
-    link.download = `${recording.title}.mp4`
-    link.target = '_blank'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-  // Join live
+
+  // Join live session
   const joinLiveSession = async (session) => {
     if (!session.meetLink) {
       alert('No meeting link')
@@ -155,43 +130,58 @@ const StudentRecordings = () => {
     }
     window.open(session.meetLink, '_blank', 'noopener,noreferrer')
   }
+
   // Load data
   useEffect(() => {
     if (studentId) loadAllData()
   }, [studentId])
+
   const loadAllData = async () => {
     try {
       setLoading(true)
       setError(null)
-      let recordingsData = []
+
+      let videosData = []
       try {
-        const res = await recordingService.getAvailableRecordings({ studentId, limit: 50 })
-        recordingsData = Array.isArray(res.recordings) ? res.recordings : []
-      } catch (err) { console.warn(err) }
-      if (recordingsData.length === 0) {
-        try {
-          const all = await recordingService.getAllRecordings({ status: 'completed', isPublished: true, limit: 100 })
-          recordingsData = all.filter(r => r.isPublished && r.status === 'completed')
-        } catch (err) { console.error(err) }
+        const res = await recordingService.getStudentVideos(studentId, { limit: 50 })
+        videosData = Array.isArray(res) ? res : (res.recordings || [])
+      } catch (err) {
+        console.warn('getStudentVideos failed, falling back to getPublishedVideos', err)
+        if (err.message.includes('index')) {
+          setError('Database index required. Please contact administrator or create the index using the link in the console.')
+        }
       }
-      if (recordingsData.length === 0) {
+
+      if (videosData.length === 0) {
         try {
-          const all = await recordingService.getAllRecordings({ limit: 100 })
-          recordingsData = all.filter(r => r.isPublished && r.status === 'completed' && r.recordingUrl)
-        } catch (err) { console.error(err) }
+          videosData = await recordingService.getPublishedVideos({ limit: 50 })
+        } catch (err) {
+          console.error('getPublishedVideos failed', err)
+          if (err.message.includes('index')) {
+            setError('Database index required. Please contact administrator or create the index using the link in the console.')
+          }
+        }
       }
-      setRecordings(recordingsData)
+
+      setVideos(videosData)
+
       try {
         const upcoming = await sessionService.getTeacherSessionsForStudents({ limit: 20, daysAhead: 30 })
         setUpcomingSessions(upcoming)
-      } catch (err) { setUpcomingSessions([]) }
+      } catch (err) {
+        setUpcomingSessions([])
+      }
+
       try {
         const live = await sessionService.getAllSessions({ status: 'live', limit: 20 })
         setLiveSessions(live)
-      } catch (err) { setLiveSessions([]) }
+      } catch (err) {
+        setLiveSessions([])
+      }
+
       setDebugInfo({
         studentId,
-        recordingsCount: recordingsData.length,
+        videosCount: videosData.length,
         upcomingCount: upcomingSessions.length,
         liveCount: liveSessions.length,
         timestamp: new Date().toISOString()
@@ -202,21 +192,23 @@ const StudentRecordings = () => {
       setLoading(false)
     }
   }
-  const debugRecordings = async () => {
+
+  const debugVideos = async () => {
     try {
-      const all = await recordingService.getAllRecordings({ limit: 50 })
-      console.log('Debug recordings:', all)
-      alert(`Found ${all.length} recordings. Check console.`)
+      const all = await recordingService.getAllVideos({ limit: 50 })
+      console.log('Debug videos:', all)
+      alert(`Found ${all.length} videos. Check console.`)
     } catch (err) {
       alert('Debug error: ' + err.message)
     }
   }
-  // Render cards
-  const renderRecordingCard = (rec, i) => {
-    const isDrive = !!getDriveFileId(rec.recordingUrl)
+
+  // Render video card
+  const renderVideoCard = (video, i) => {
+    const thumbnail = video.thumbnailUrl || `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`
     return (
       <motion.div
-        key={rec.id}
+        key={video.id}
         layout
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -224,39 +216,30 @@ const StudentRecordings = () => {
         transition={{ delay: i * 0.05 }}
         className="glass rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden card-3d hover-lift"
       >
-        <div className="h-48 bg-gradient-to-br from-blue-500 to-cyan-500 relative overflow-hidden">
-          {rec.thumbnailUrl ? (
-            <img src={rec.thumbnailUrl} alt={rec.title} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Video className="h-16 w-16 text-white opacity-80" />
-            </div>
-          )}
+        <div className="h-48 bg-gradient-to-br from-red-500 to-red-600 relative overflow-hidden">
+          <img
+            src={thumbnail}
+            alt={video.title}
+            className="w-full h-full object-cover"
+            onError={(e) => { e.target.src = 'https://via.placeholder.com/640x360?text=No+Thumbnail' }}
+          />
           <div className="absolute bottom-4 left-4">
             <span className="px-3 py-1 bg-black bg-opacity-70 text-white rounded-full text-sm font-medium backdrop-blur-sm">
-              {formatDuration(rec.duration)}
+              {formatDuration(video.duration)}
             </span>
           </div>
-          {rec.watched && (
+          {video.watched && (
             <div className="absolute top-4 right-4">
               <span className="px-3 py-1 bg-green-500 text-white rounded-full text-xs font-medium">
                 <Check className="h-3 w-3 inline" /> Watched
               </span>
             </div>
           )}
-          {isDrive && (
-            <div className="absolute top-4 left-4">
-              <span className="px-2 py-1 bg-blue-500 text-white rounded-full text-xs font-medium flex items-center">
-                <ExternalLink className="h-3 w-3 mr-1" />
-                Drive
-              </span>
-            </div>
-          )}
           <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black bg-opacity-40">
             <button
-              onClick={() => watchInDrive(rec)}
+              onClick={() => watchVideo(video)}
               className="p-3 bg-white bg-opacity-20 rounded-full backdrop-blur-sm hover:bg-opacity-30 transition-all"
-              title="Watch on Google Drive"
+              title="Watch on platform"
             >
               <PlayCircle className="h-8 w-8 text-white" />
             </button>
@@ -265,34 +248,31 @@ const StudentRecordings = () => {
         <div className="p-6 space-y-4">
           <div className="flex items-start justify-between">
             <h3 className="font-semibold text-gray-900 dark:text-white text-lg line-clamp-2 flex-1">
-              {rec.title}
+              {video.title}
             </h3>
-            {rec.isFeatured && <Star className="h-5 w-5 text-yellow-500 fill-current ml-2" />}
+            {video.isFeatured && <Star className="h-5 w-5 text-yellow-500 fill-current ml-2" />}
           </div>
           <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2">
-            {rec.description || 'No description'}
+            {video.description || 'No description'}
           </p>
           <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
             <div className="flex items-center gap-3">
-              <span className="flex items-center"><Users className="h-4 w-4 mr-1" />{rec.instructorName}</span>
-              <span className="flex items-center"><Eye className="h-4 w-4 mr-1" />{rec.views || 0}</span>
+              <span className="flex items-center"><Users className="h-4 w-4 mr-1" />{video.instructorName}</span>
+              <span className="flex items-center"><Eye className="h-4 w-4 mr-1" />{video.views || 0}</span>
             </div>
-            {rec.category && (
+            {video.category && (
               <span className="px-2 py-1 bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30 text-xs rounded-full">
-                {rec.category}
+                {video.category}
               </span>
             )}
           </div>
           <div className="flex items-center justify-between pt-2">
             <span className="text-xs text-gray-500 dark:text-gray-400">
-              {new Date(rec.createdAt).toLocaleDateString()}
+              {new Date(video.createdAt).toLocaleDateString()}
             </span>
             <div className="flex gap-2">
-              <Button onClick={() => watchInDrive(rec)} size="sm" className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600">
-                <PlayCircle className="h-4 w-4 mr-1" /> Watch
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => downloadVideo(rec)} title="Download">
-                <Download className="h-4 w-4" />
+              <Button onClick={() => watchVideo(video)} size="sm" className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700">
+                <Youtube className="h-4 w-4 mr-1" /> Watch
               </Button>
             </div>
           </div>
@@ -300,6 +280,7 @@ const StudentRecordings = () => {
       </motion.div>
     )
   }
+
   const renderUpcomingSessionCard = (s, i) => (
     <motion.div key={s.id} layout initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ delay: i * 0.05 }} className="glass rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden card-3d hover-lift border-l-4 border-l-orange-500">
       <div className="h-48 bg-gradient-to-br from-orange-400 to-yellow-500 relative overflow-hidden">
@@ -325,6 +306,7 @@ const StudentRecordings = () => {
       </div>
     </motion.div>
   )
+
   const renderLiveSessionCard = (s, i) => (
     <motion.div key={s.id} layout initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ delay: i * 0.05 }} className="glass rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden card-3d hover-lift border-l-4 border-l-red-500 animate-pulse">
       <div className="h-48 bg-gradient-to-br from-red-500 to-pink-600 relative overflow-hidden">
@@ -350,14 +332,16 @@ const StudentRecordings = () => {
       </div>
     </motion.div>
   )
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <LoadingSpinner size="lg" />
-        <span className="ml-3">Loading your recordings...</span>
+        <span className="ml-3">Loading your content...</span>
       </div>
     )
   }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -368,14 +352,15 @@ const StudentRecordings = () => {
             Learning Content
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Watch recordings on Google Drive, join live sessions
+            Watch recorded lessons, join live sessions
           </p>
         </div>
         <div className="flex gap-3">
           <Button onClick={loadAllData} variant="outline"><RefreshCw className="h-4 w-4 mr-2" />Refresh</Button>
-          <Button onClick={debugRecordings} variant="outline"><AlertCircle className="h-4 w-4 mr-2" />Debug</Button>
+          <Button onClick={debugVideos} variant="outline"><AlertCircle className="h-4 w-4 mr-2" />Debug</Button>
         </div>
       </motion.div>
+
       {/* Error */}
       {error && (
         <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center">
@@ -383,11 +368,12 @@ const StudentRecordings = () => {
           <p className="text-red-700 dark:text-red-300">{error}</p>
         </div>
       )}
+
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
-          { label: 'Total Recordings', value: stats.totalRecordings, icon: Video, color: 'blue' },
-          { label: 'Completed', value: stats.completedRecordings, percent: stats.completionRate, icon: Check, color: 'green' },
+          { label: 'Total Videos', value: stats.totalVideos, icon: Video, color: 'blue' },
+          { label: 'Completed', value: stats.completedVideos, percent: stats.completionRate, icon: Check, color: 'green' },
           { label: 'Total Watch Time', value: stats.totalDuration, icon: Clock, color: 'purple' }
         ].map((stat, i) => (
           <motion.div key={i} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.1 }} className="glass rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 card-hover">
@@ -404,12 +390,13 @@ const StudentRecordings = () => {
           </motion.div>
         ))}
       </div>
-      {/* Tabs */}
+
+      {/* Tabs & Filters */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
         <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-6">
           <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
             {[
-              { key: 'recordings', label: 'Recordings', icon: Video, count: recordings.length },
+              { key: 'videos', label: 'Videos', icon: Video, count: videos.length },
               { key: 'upcoming', label: 'Upcoming', icon: Calendar, count: upcomingSessions.length },
               { key: 'live', label: 'Live', icon: Radio, count: liveSessions.length }
             ].map(tab => (
@@ -446,12 +433,13 @@ const StudentRecordings = () => {
           </div>
         </div>
       </motion.div>
+
       {/* Content Grid */}
       <div>
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           <AnimatePresence>
             {filteredContent.map((item, i) => {
-              if (item.type === 'recording') return renderRecordingCard(item, i)
+              if (item.type === 'video') return renderVideoCard(item, i)
               if (item.type === 'upcoming') return renderUpcomingSessionCard(item, i)
               if (item.type === 'live') return renderLiveSessionCard(item, i)
               return null
@@ -460,7 +448,7 @@ const StudentRecordings = () => {
         </div>
         {filteredContent.length === 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
-            {activeTab === 'recordings' && <Video className="mx-auto h-16 w-16 text-gray-400 mb-4" />}
+            {activeTab === 'videos' && <Video className="mx-auto h-16 w-16 text-gray-400 mb-4" />}
             {activeTab === 'upcoming' && <Calendar className="mx-auto h-16 w-16 text-gray-400 mb-4" />}
             {activeTab === 'live' && <Radio className="mx-auto h-16 w-16 text-gray-400 mb-4" />}
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No {activeTab} found</h3>
@@ -474,4 +462,5 @@ const StudentRecordings = () => {
     </div>
   )
 }
+
 export default StudentRecordings

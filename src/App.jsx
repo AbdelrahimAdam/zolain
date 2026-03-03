@@ -7,6 +7,7 @@ import Register from '@/pages/Auth/Register.jsx';
 
 // Unified layout
 import Layout from '@/components/Layout/Layout.jsx';
+import PublicLayout from '@/components/Layout/PublicLayout.jsx';
 
 // Dashboards
 import AdminDashboard from '@/pages/Admin/Dashboard.jsx';
@@ -23,16 +24,28 @@ import Analytics from '@/pages/Admin/Analytics.jsx';
 import TeacherRecordings from '@/pages/Teacher/TeacherRecordings.jsx';
 import TeacherSessions from '@/pages/Teacher/TeacherSessions.jsx';
 import TeacherStudents from '@/pages/Teacher/TeacherStudents.jsx';
+import TeacherCourses from '@/pages/Teacher/TeacherCourses.jsx';
 
 // Student pages
 import StudentSessions from '@/pages/Student/StudentSessions.jsx';
 import StudentRecordings from '@/pages/Student/StudentRecordings.jsx';
 import StudentCourses from '@/pages/Student/StudentCourses.jsx';
+import StudentCourseDetail from '@/pages/Student/StudentCourseDetail.jsx';
 
 // Shared / Other components
 import RecordingDetail from '@/pages/Recording/RecordingDetail.jsx';
 import Profile from '@/pages/User/Profile.jsx';
 import SubscriptionPlans from '@/components/Subscription/SubscriptionPlans.jsx';
+
+// New public pages for Zolain
+import Home from '@/pages/Public/Home.jsx';
+import CourseCatalog from '@/pages/Public/CourseCatalog.jsx';
+import InstructorProfiles from '@/pages/Public/InstructorProfiles.jsx';
+import Contact from '@/pages/Public/Contact.jsx';
+
+// New course editor (admin/teacher)
+import CourseEditor from '@/pages/Admin/CourseEditor.jsx';
+
 import { getAuth } from 'firebase/auth';
 
 // ✅ Force Logout Component
@@ -76,12 +89,10 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     )
   }
 
-  // If no user and not loading, redirect to login
   if (!user && !loading) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  // If user exists but profile is still loading, show loading
   if (user && !userProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
@@ -93,7 +104,6 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     )
   }
 
-  // ⏳ Pending approval
   if (userProfile && !userProfile.isActive && userRole !== 'admin') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
@@ -122,7 +132,6 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     )
   }
 
-  // Check role-based access
   if (requiredRole && userRole !== requiredRole) {
     return <Navigate to="/unauthorized" replace />
   }
@@ -130,8 +139,8 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   return children
 }
 
-// ✅ Public Route Component
-const PublicRoute = ({ children }) => {
+// ✅ Public Only Route (for login/register)
+const PublicOnlyRoute = ({ children }) => {
   const { user, userRole, loading } = useAuth()
 
   if (loading) {
@@ -142,8 +151,7 @@ const PublicRoute = ({ children }) => {
     )
   }
 
-  // If user exists and not loading, redirect to appropriate dashboard
-  if (user && !loading) {
+  if (user) {
     switch (userRole) {
       case 'admin':
         return <Navigate to="/admin/dashboard" replace />
@@ -159,7 +167,7 @@ const PublicRoute = ({ children }) => {
   return children
 }
 
-// ✅ Role-based dashboard component (NOT a redirect)
+// ✅ Role-based dashboard component
 const RoleBasedDashboard = () => {
   const { userRole, userProfile, loading } = useAuth()
 
@@ -236,100 +244,22 @@ const RoleBasedDashboard = () => {
   }
 }
 
-// ✅ Placeholder components for missing pages
-const ReportsPage = () => (
-  <div className="p-6">
-    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Reports</h1>
-    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl border border-white/20 dark:border-gray-700/50 p-6 shadow-2xl">
-      <p className="text-gray-600 dark:text-gray-400">Reports content will be implemented here.</p>
-    </div>
-  </div>
-)
-
-const MyCourses = () => (
-  <div className="p-6">
-    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">My Courses</h1>
-    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl border border-white/20 dark:border-gray-700/50 p-6 shadow-2xl">
-      <p className="text-gray-600 dark:text-gray-400">My courses content will be implemented here.</p>
-    </div>
-  </div>
-)
-
-const SchedulePage = () => (
-  <div className="p-6">
-    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Schedule</h1>
-    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl border border-white/20 dark:border-gray-700/50 p-6 shadow-2xl">
-      <p className="text-gray-600 dark:text-gray-400">Schedule content will be implemented here.</p>
-    </div>
-  </div>
-)
-
-const MessagesPage = () => (
-  <div className="p-6">
-    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Messages</h1>
-    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl border border-white/20 dark:border-gray-700/50 p-6 shadow-2xl">
-      <p className="text-gray-600 dark:text-gray-400">Messages content will be implemented here.</p>
-    </div>
-  </div>
-)
-
-const ProgressPage = () => (
-  <div className="p-6">
-    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Progress</h1>
-    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl border border-white/20 dark:border-gray-700/50 p-6 shadow-2xl">
-      <p className="text-gray-600 dark:text-gray-400">Progress tracking content will be implemented here.</p>
-    </div>
-  </div>
-)
-
-const BrowseCourses = () => (
-  <div className="p-6">
-    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Browse Courses</h1>
-    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl border border-white/20 dark:border-gray-700/50 p-6 shadow-2xl">
-      <p className="text-gray-600 dark:text-gray-400">Browse courses content will be implemented here.</p>
-    </div>
-  </div>
-)
-
-const NotificationsPage = () => (
-  <div className="p-6">
-    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Notifications</h1>
-    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl border border-white/20 dark:border-gray-700/50 p-6 shadow-2xl">
-      <p className="text-gray-600 dark:text-gray-400">Notifications content will be implemented here.</p>
-    </div>
-  </div>
-)
-
-const HelpPage = () => (
-  <div className="p-6">
-    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Help & Support</h1>
-    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl border border-white/20 dark:border-gray-700/50 p-6 shadow-2xl">
-      <p className="text-gray-600 dark:text-gray-400">Help and support content will be implemented here.</p>
-    </div>
-  </div>
-)
-
+// Placeholders
+const ReportsPage = () => <div className="p-6"><h1 className="text-3xl font-bold">Reports</h1></div>;
+const MyCourses = () => <div className="p-6"><h1 className="text-3xl font-bold">My Courses</h1></div>;
+const SchedulePage = () => <div className="p-6"><h1 className="text-3xl font-bold">Schedule</h1></div>;
+const MessagesPage = () => <div className="p-6"><h1 className="text-3xl font-bold">Messages</h1></div>;
+const ProgressPage = () => <div className="p-6"><h1 className="text-3xl font-bold">Progress</h1></div>;
+const NotificationsPage = () => <div className="p-6"><h1 className="text-3xl font-bold">Notifications</h1></div>;
+const HelpPage = () => <div className="p-6"><h1 className="text-3xl font-bold">Help & Support</h1></div>;
 const UnauthorizedPage = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-    <div className="text-center max-w-md mx-4">
-      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border border-white/20 dark:border-gray-700/50 rounded-3xl p-8 shadow-2xl">
-        <div className="text-6xl mb-4">🚫</div>
-        <h3 className="text-2xl font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent mb-4">
-          Unauthorized Access
-        </h3>
-        <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed">
-          You don't have permission to access this page. Please contact your administrator if you believe this is an error.
-        </p>
-        <button
-          onClick={() => window.history.back()}
-          className="mt-6 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-medium"
-        >
-          Go Back
-        </button>
-      </div>
-    </div>
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="text-center">🚫 Unauthorized</div>
   </div>
-)
+);
+
+// New placeholders for lessons pages
+const AdminLessons = () => <div className="p-6"><h1 className="text-3xl font-bold">Admin Lessons</h1><p>Manage all lesson videos</p></div>;
 
 // ✅ Main Routes
 function AppRoutes() {
@@ -337,26 +267,18 @@ function AppRoutes() {
 
   return (
     <Routes>
+      {/* Public routes */}
+      <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
+      <Route path="/courses" element={<PublicLayout><CourseCatalog /></PublicLayout>} />
+      <Route path="/instructors" element={<PublicLayout><InstructorProfiles /></PublicLayout>} />
+      <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
+
       {/* Auth routes */}
-      <Route
-        path="/login"
-        element={
-          <PublicRoute>
-            <Login />
-          </PublicRoute>
-        }
-      />
-      <Route
-        path="/register"
-        element={
-          <PublicRoute>
-            <Register />
-          </PublicRoute>
-        }
-      />
+      <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+      <Route path="/register" element={<PublicOnlyRoute><Register /></PublicOnlyRoute>} />
       <Route path="/logout" element={<Logout />} />
 
-      {/* Main dashboard route - Renders the appropriate dashboard based on role */}
+      {/* Dashboard route */}
       <Route
         path="/dashboard"
         element={
@@ -368,7 +290,7 @@ function AppRoutes() {
         }
       />
 
-      {/* Admin routes with unified Layout */}
+      {/* Admin routes */}
       <Route
         path="/admin/*"
         element={
@@ -378,6 +300,9 @@ function AppRoutes() {
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="users" element={<UserManagement />} />
                 <Route path="courses" element={<CourseManagement />} />
+                <Route path="courses/new" element={<CourseEditor />} />
+                <Route path="courses/:courseId/edit" element={<CourseEditor />} />
+                <Route path="lessons" element={<AdminLessons />} />                 {/* NEW lessons route */}
                 <Route path="sessions" element={<SessionManagement />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="reports" element={<ReportsPage />} />
@@ -392,7 +317,7 @@ function AppRoutes() {
         }
       />
 
-      {/* Teacher routes with unified Layout */}
+      {/* Teacher routes */}
       <Route
         path="/teacher/*"
         element={
@@ -401,8 +326,12 @@ function AppRoutes() {
               <Routes>
                 <Route path="dashboard" element={<TeacherDashboard />} />
                 <Route path="recordings" element={<TeacherRecordings />} />
+                <Route path="lessons" element={<TeacherRecordings />} />           {/* NEW lessons route (reuses recordings component) */}
                 <Route path="sessions" element={<TeacherSessions />} />
                 <Route path="students" element={<TeacherStudents />} />
+                <Route path="courses" element={<TeacherCourses />} />
+                <Route path="courses/new" element={<CourseEditor />} />
+                <Route path="courses/:courseId/edit" element={<CourseEditor />} />
                 <Route path="my-courses" element={<MyCourses />} />
                 <Route path="schedule" element={<SchedulePage />} />
                 <Route path="messages" element={<MessagesPage />} />
@@ -418,7 +347,7 @@ function AppRoutes() {
         }
       />
 
-      {/* Student routes with unified Layout */}
+      {/* Student routes */}
       <Route
         path="/student/*"
         element={
@@ -428,7 +357,9 @@ function AppRoutes() {
                 <Route path="dashboard" element={<StudentDashboard />} />
                 <Route path="sessions" element={<StudentSessions />} />
                 <Route path="recordings" element={<StudentRecordings />} />
+                <Route path="lessons" element={<StudentRecordings />} />           {/* NEW lessons route (reuses recordings component) */}
                 <Route path="courses" element={<StudentCourses />} />
+                <Route path="courses/:courseId" element={<StudentCourseDetail />} />
                 <Route path="my-courses" element={<MyCourses />} />
                 <Route path="schedule" element={<SchedulePage />} />
                 <Route path="messages" element={<MessagesPage />} />
@@ -444,7 +375,7 @@ function AppRoutes() {
         }
       />
 
-      {/* Common routes - These will use the appropriate layout based on user role */}
+      {/* Common protected routes */}
       <Route
         path="/recording/:id"
         element={
@@ -496,43 +427,38 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/courses"
+        path="/messages"          // NEW top-level messages route
         element={
-          <ProtectedRoute requiredRole="student">
-            <Layout role="student">
-              <BrowseCourses />
+          <ProtectedRoute>
+            <Layout role={userRole}>
+              <MessagesPage />
             </Layout>
           </ProtectedRoute>
         }
       />
 
-      {/* Error routes */}
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
-
-      {/* Default routes - Redirect to appropriate dashboard based on role */}
-      <Route path="/" element={<NavigateToDashboard />} />
-      <Route path="*" element={<NavigateToDashboard />} />
+      <Route path="*" element={<NavigateToDashboardOrHome />} />
     </Routes>
   )
 }
 
-// ✅ Component to handle root redirect based on user role
-const NavigateToDashboard = () => {
+// Redirect root to public home if not logged in, else to dashboard
+const NavigateToDashboardOrHome = () => {
   const { user, userRole, loading } = useAuth()
   
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     )
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/" replace />
   }
 
-  // Redirect to appropriate dashboard based on role
   switch (userRole) {
     case 'admin':
       return <Navigate to="/admin/dashboard" replace />
@@ -556,4 +482,4 @@ function App() {
   )
 }
 
-export default App
+export default App;

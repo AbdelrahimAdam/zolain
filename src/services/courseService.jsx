@@ -3,7 +3,8 @@ import {
   doc, 
   getDocs, 
   getDoc, 
-  addDoc, 
+  addDoc,
+  setDoc, 
   updateDoc, 
   deleteDoc,
   query, 
@@ -14,11 +15,15 @@ import {
   writeBatch,
   serverTimestamp,
   Timestamp,
-  getCountFromServer
+  getCountFromServer,
+  increment,
+  FieldPath
 } from 'firebase/firestore'
 import { db } from '../config/firebase'
 
 const courseService = {
+  // ==================== COURSE CRUD ====================
+
   // Create a new course with comprehensive validation
   createCourse: async (courseData) => {
     try {
@@ -133,7 +138,6 @@ const courseService = {
 
       const courseData = courseDoc.data();
       
-      // Transform Firestore timestamps to Date objects
       const transformedCourse = {
         id: courseDoc.id,
         ...courseData,
@@ -169,7 +173,6 @@ const courseService = {
 
       let coursesQuery = query(collection(db, 'courses'), orderBy(sortBy, sortOrder));
 
-      // Apply status filter
       if (status !== 'all') {
         if (status === 'published') {
           coursesQuery = query(coursesQuery, where('isPublished', '==', true));
@@ -180,22 +183,18 @@ const courseService = {
         }
       }
 
-      // Apply category filter
       if (category !== 'all') {
         coursesQuery = query(coursesQuery, where('category', '==', category));
       }
 
-      // Apply level filter
       if (level !== 'all') {
         coursesQuery = query(coursesQuery, where('level', '==', level));
       }
 
-      // Apply featured filter
       if (isFeatured !== 'all') {
         coursesQuery = query(coursesQuery, where('isFeatured', '==', (isFeatured === 'featured')));
       }
 
-      // Apply instructor filter
       if (instructorId) {
         coursesQuery = query(coursesQuery, where('instructorId', '==', instructorId));
       }
@@ -214,7 +213,6 @@ const courseService = {
         };
       });
 
-      // Apply search filter if provided
       let filteredCourses = courses;
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
@@ -235,7 +233,7 @@ const courseService = {
     }
   },
 
-  // Get published courses for students - FIXED VERSION
+  // Get published courses (public catalog)
   getPublishedCourses: async (resultLimit = 20) => {
     try {
       console.log('🔄 Fetching published courses');
@@ -268,20 +266,14 @@ const courseService = {
     }
   },
 
-  // Get student courses (enrolled or available)
-  getStudentCourses: async (studentId = null, options = {}) => {
+  // Get courses by category
+  getCoursesByCategory: async (category, resultLimit = 20) => {
     try {
-      console.log('🔄 Fetching student courses:', { studentId });
+      console.log('🔄 Fetching courses by category:', category);
       
-      const {
-        limit: resultLimit = 20,
-        type = 'all' // all, enrolled, available
-      } = options;
-
-      // For now, return all published courses
-      // In a real app, you would filter by student enrollment
       const coursesQuery = query(
         collection(db, 'courses'),
+        where('category', '==', category),
         where('isPublished', '==', true),
         where('status', '!=', 'archived'),
         orderBy('createdAt', 'desc'),
@@ -291,47 +283,32 @@ const courseService = {
       const snapshot = await getDocs(coursesQuery);
       const courses = snapshot.docs.map(doc => {
         const courseData = doc.data();
-        
-        // Check if student is enrolled (placeholder logic)
-        const isEnrolled = studentId ? 
-          courseData.enrolledStudents?.includes(studentId) || false :
-          false;
-
         return {
           id: doc.id,
           ...courseData,
-          isEnrolled,
           createdAt: courseData.createdAt?.toDate?.(),
           updatedAt: courseData.updatedAt?.toDate?.(),
           publishedAt: courseData.publishedAt?.toDate?.()
         };
       });
 
-      // Filter by enrollment type if specified
-      let filteredCourses = courses;
-      if (type === 'enrolled') {
-        filteredCourses = courses.filter(course => course.isEnrolled);
-      } else if (type === 'available') {
-        filteredCourses = courses.filter(course => !course.isEnrolled);
-      }
-
-      console.log(`✅ Fetched ${filteredCourses.length} student courses`);
-      return filteredCourses;
+      console.log(`✅ Fetched ${courses.length} courses in category: ${category}`);
+      return courses;
     } catch (error) {
-      console.error('❌ Error fetching student courses:', error);
-      throw new Error(`Failed to fetch student courses: ${error.message}`);
+      console.error('❌ Error fetching courses by category:', error);
+      throw new Error(`Failed to fetch courses by category: ${error.message}`);
     }
   },
 
-  // Get featured courses
-  getFeaturedCourses: async (resultLimit = 10) => {
+  // Get courses by level
+  getCoursesByLevel: async (level, resultLimit = 20) => {
     try {
-      console.log('🔄 Fetching featured courses');
+      console.log('🔄 Fetching courses by level:', level);
       
       const coursesQuery = query(
         collection(db, 'courses'),
+        where('level', '==', level),
         where('isPublished', '==', true),
-        where('isFeatured', '==', true),
         where('status', '!=', 'archived'),
         orderBy('createdAt', 'desc'),
         limit(resultLimit)
@@ -349,11 +326,11 @@ const courseService = {
         };
       });
 
-      console.log(`✅ Fetched ${courses.length} featured courses`);
+      console.log(`✅ Fetched ${courses.length} courses for level: ${level}`);
       return courses;
     } catch (error) {
-      console.error('❌ Error fetching featured courses:', error);
-      throw new Error(`Failed to fetch featured courses: ${error.message}`);
+      console.error('❌ Error fetching courses by level:', error);
+      throw new Error(`Failed to fetch courses by level: ${error.message}`);
     }
   },
 
@@ -403,6 +380,42 @@ const courseService = {
     }
   },
 
+  // Get featured courses
+  getFeaturedCourses: async (resultLimit = 10) => {
+    try {
+      console.log('🔄 Fetching featured courses');
+      
+      const coursesQuery = query(
+        collection(db, 'courses'),
+        where('isPublished', '==', true),
+        where('isFeatured', '==', true),
+        where('status', '!=', 'archived'),
+        orderBy('createdAt', 'desc'),
+        limit(resultLimit)
+      );
+
+      const snapshot = await getDocs(coursesQuery);
+      const courses = snapshot.docs.map(doc => {
+        const courseData = doc.data();
+        return {
+          id: doc.id,
+          ...courseData,
+          createdAt: courseData.createdAt?.toDate?.(),
+          updatedAt: courseData.updatedAt?.toDate?.(),
+          publishedAt: courseData.publishedAt?.toDate?.()
+        };
+      });
+
+      console.log(`✅ Fetched ${courses.length} featured courses`);
+      return courses;
+    } catch (error) {
+      console.error('❌ Error fetching featured courses:', error);
+      throw new Error(`Failed to fetch featured courses: ${error.message}`);
+    }
+  },
+
+  // ==================== UPDATE / DELETE ====================
+
   // Update course with comprehensive validation
   updateCourse: async (courseId, updates) => {
     try {
@@ -412,7 +425,6 @@ const courseService = {
         throw new Error('Course ID is required');
       }
 
-      // Define allowed fields for update
       const allowedFields = [
         'title', 'description', 'shortDescription', 'category', 'level', 'language',
         'tags', 'thumbnailUrl', 'promoVideoUrl', 'isFree', 'price', 'currency',
@@ -422,7 +434,6 @@ const courseService = {
         'metaTitle', 'metaDescription', 'settings'
       ];
 
-      // Filter updates to only include allowed fields
       const filteredUpdates = {};
       Object.keys(updates).forEach(key => {
         if (allowedFields.includes(key)) {
@@ -435,7 +446,6 @@ const courseService = {
         updatedAt: serverTimestamp()
       };
 
-      // Handle publication timestamp
       if (updates.isPublished && !updates.publishedAt) {
         const course = await courseService.getCourseById(courseId);
         if (course && !course.publishedAt) {
@@ -538,8 +548,6 @@ const courseService = {
   deleteCourse: async (courseId) => {
     try {
       console.log('🔄 Deleting course:', courseId);
-      
-      // Instead of hard delete, we archive the course
       return await courseService.archiveCourse(courseId);
     } catch (error) {
       console.error('❌ Error deleting course:', error);
@@ -547,7 +555,194 @@ const courseService = {
     }
   },
 
-  // Update course enrollment count
+  // ==================== STUDENT ENROLLMENT & PROGRESS ====================
+
+  /**
+   * Get courses the student is enrolled in, with progress data
+   */
+  getEnrolledCourses: async (studentId) => {
+    try {
+      console.log('🔄 Fetching enrolled courses for student:', studentId);
+
+      // Query enrollments collection
+      const enrollmentsQuery = query(
+        collection(db, 'enrollments'),
+        where('studentId', '==', studentId),
+        where('status', '==', 'active')
+      );
+      const enrollmentsSnap = await getDocs(enrollmentsQuery);
+      const courseIds = enrollmentsSnap.docs.map(doc => doc.data().courseId);
+
+      if (courseIds.length === 0) return [];
+
+      // Fetch each course document
+      const coursePromises = courseIds.map(async (courseId) => {
+        const courseDoc = await getDoc(doc(db, 'courses', courseId));
+        return courseDoc.exists() ? courseDoc : null;
+      });
+      const courseDocs = (await Promise.all(coursePromises)).filter(Boolean);
+
+      // Merge enrollment data (progress, etc.)
+      const enrolledCourses = courseDocs.map(doc => {
+        const courseData = doc.data();
+        const enrollment = enrollmentsSnap.docs.find(
+          e => e.data().courseId === doc.id
+        )?.data();
+        return {
+          id: doc.id,
+          ...courseData,
+          progress: enrollment?.progress || 0,
+          enrolledAt: enrollment?.enrolledAt?.toDate?.(),
+          lastAccessed: enrollment?.lastAccessed?.toDate?.(),
+          completedAt: enrollment?.completedAt?.toDate?.(),
+          createdAt: courseData.createdAt?.toDate?.(),
+          updatedAt: courseData.updatedAt?.toDate?.(),
+          publishedAt: courseData.publishedAt?.toDate?.()
+        };
+      });
+
+      console.log(`✅ Fetched ${enrolledCourses.length} enrolled courses`);
+      return enrolledCourses;
+    } catch (error) {
+      console.error('❌ Error fetching enrolled courses:', error);
+      throw new Error(`Failed to fetch enrolled courses: ${error.message}`);
+    }
+  },
+
+  /**
+   * Enroll a student in a course
+   */
+  enrollStudent: async (courseId, studentId) => {
+    try {
+      console.log('🔄 Enrolling student:', studentId, 'in course:', courseId);
+
+      // Check if already enrolled
+      const enrollmentsRef = collection(db, 'enrollments');
+      const q = query(
+        enrollmentsRef,
+        where('studentId', '==', studentId),
+        where('courseId', '==', courseId)
+      );
+      const existing = await getDocs(q);
+
+      if (!existing.empty) {
+        console.log('ℹ️ Student already enrolled');
+        return { alreadyEnrolled: true };
+      }
+
+      // Create enrollment document
+      const enrollmentRef = doc(enrollmentsRef);
+      await setDoc(enrollmentRef, {
+        studentId,
+        courseId,
+        enrolledAt: serverTimestamp(),
+        progress: 0,
+        status: 'active',
+        lastAccessed: null,
+        completedAt: null,
+      });
+
+      // Increment student count on course
+      const courseRef = doc(db, 'courses', courseId);
+      await updateDoc(courseRef, {
+        studentsEnrolled: increment(1)
+      });
+
+      console.log('✅ Student enrolled successfully');
+      return { success: true, enrollmentId: enrollmentRef.id };
+    } catch (error) {
+      console.error('❌ Error enrolling student:', error);
+      throw new Error(`Failed to enroll: ${error.message}`);
+    }
+  },
+
+  /**
+   * Update student progress in a course
+   */
+  updateProgress: async (courseId, studentId, progress) => {
+    try {
+      console.log('🔄 Updating progress for student:', studentId, 'course:', courseId);
+
+      const enrollmentsQuery = query(
+        collection(db, 'enrollments'),
+        where('studentId', '==', studentId),
+        where('courseId', '==', courseId)
+      );
+      const snapshot = await getDocs(enrollmentsQuery);
+      if (snapshot.empty) {
+        throw new Error('Enrollment not found');
+      }
+
+      const enrollmentDoc = snapshot.docs[0];
+      const updateData = {
+        progress,
+        lastAccessed: serverTimestamp(),
+      };
+      if (progress >= 100) {
+        updateData.completedAt = serverTimestamp();
+        updateData.status = 'completed';
+      }
+
+      await updateDoc(enrollmentDoc.ref, updateData);
+
+      console.log('✅ Progress updated');
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error updating progress:', error);
+      throw new Error(`Failed to update progress: ${error.message}`);
+    }
+  },
+
+  /**
+   * Get all available courses for a student (not yet enrolled)
+   */
+  getAvailableCourses: async (studentId, resultLimit = 20) => {
+    try {
+      console.log('🔄 Fetching available courses for student:', studentId);
+
+      // First get enrolled course IDs
+      const enrollmentsQuery = query(
+        collection(db, 'enrollments'),
+        where('studentId', '==', studentId)
+      );
+      const enrollmentsSnap = await getDocs(enrollmentsQuery);
+      const enrolledCourseIds = new Set(enrollmentsSnap.docs.map(doc => doc.data().courseId));
+
+      // Get all published courses
+      const coursesQuery = query(
+        collection(db, 'courses'),
+        where('isPublished', '==', true),
+        where('status', '!=', 'archived'),
+        orderBy('createdAt', 'desc'),
+        limit(resultLimit)
+      );
+      const snapshot = await getDocs(coursesQuery);
+      
+      const courses = snapshot.docs
+        .map(doc => {
+          const courseData = doc.data();
+          return {
+            id: doc.id,
+            ...courseData,
+            isEnrolled: enrolledCourseIds.has(doc.id),
+            createdAt: courseData.createdAt?.toDate?.(),
+            updatedAt: courseData.updatedAt?.toDate?.(),
+            publishedAt: courseData.publishedAt?.toDate?.()
+          };
+        })
+        .filter(course => !course.isEnrolled); // only those not enrolled
+
+      console.log(`✅ Fetched ${courses.length} available courses`);
+      return courses;
+    } catch (error) {
+      console.error('❌ Error fetching available courses:', error);
+      throw new Error(`Failed to fetch available courses: ${error.message}`);
+    }
+  },
+
+  // ==================== ANALYTICS & STATISTICS ====================
+
+  // Update enrollment count
   updateEnrollmentCount: async (courseId, change = 1) => {
     try {
       console.log('🔄 Updating enrollment count for course:', courseId);
@@ -626,45 +821,10 @@ const courseService = {
       console.log('✅ Course views incremented:', { courseId, newViews });
     } catch (error) {
       console.error('❌ Error incrementing course views:', error);
-      // Don't throw error for non-critical updates
     }
   },
 
-  // Get courses by category
-  getCoursesByCategory: async (category, resultLimit = 20) => {
-    try {
-      console.log('🔄 Fetching courses by category:', category);
-      
-      const coursesQuery = query(
-        collection(db, 'courses'),
-        where('category', '==', category),
-        where('isPublished', '==', true),
-        where('status', '!=', 'archived'),
-        orderBy('createdAt', 'desc'),
-        limit(resultLimit)
-      );
-
-      const snapshot = await getDocs(coursesQuery);
-      const courses = snapshot.docs.map(doc => {
-        const courseData = doc.data();
-        return {
-          id: doc.id,
-          ...courseData,
-          createdAt: courseData.createdAt?.toDate?.(),
-          updatedAt: courseData.updatedAt?.toDate?.(),
-          publishedAt: courseData.publishedAt?.toDate?.()
-        };
-      });
-
-      console.log(`✅ Fetched ${courses.length} courses in category: ${category}`);
-      return courses;
-    } catch (error) {
-      console.error('❌ Error fetching courses by category:', error);
-      throw new Error(`Failed to fetch courses by category: ${error.message}`);
-    }
-  },
-
-  // Get course statistics
+  // Get comprehensive course statistics
   getCourseStats: async () => {
     try {
       console.log('🔄 Fetching course statistics');
@@ -692,7 +852,6 @@ const courseService = {
         archived: archivedCoursesCount.data().count,
         featured: featuredCoursesCount.data().count,
         
-        // Calculate additional metrics from course data
         totalStudents: allCourses.reduce((sum, course) => sum + (course.studentsEnrolled || 0), 0),
         totalRevenue: allCourses.reduce((sum, course) => {
           if (!course.isFree) {
@@ -704,14 +863,12 @@ const courseService = {
           ? allCourses.reduce((sum, course) => sum + (course.averageRating || 0), 0) / allCourses.length
           : 0,
         
-        // Category distribution
         categories: allCourses.reduce((acc, course) => {
           const category = course.category || 'uncategorized';
           acc[category] = (acc[category] || 0) + 1;
           return acc;
         }, {}),
         
-        // Level distribution
         levels: allCourses.reduce((acc, course) => {
           const level = course.level || 'unknown';
           acc[level] = (acc[level] || 0) + 1;
@@ -727,7 +884,7 @@ const courseService = {
     }
   },
 
-  // Get total courses count
+  // Get total courses count (lightweight)
   getTotalCourses: async () => {
     try {
       console.log('🔄 Getting total courses count');
@@ -741,6 +898,8 @@ const courseService = {
       return 0;
     }
   },
+
+  // ==================== VALIDATION ====================
 
   // Validate course data before creation/update
   validateCourseData: (courseData, isUpdate = false) => {
@@ -783,18 +942,22 @@ export const createCourse = courseService.createCourse;
 export const getCourseById = courseService.getCourseById;
 export const getAllCourses = courseService.getAllCourses;
 export const getPublishedCourses = courseService.getPublishedCourses;
-export const getStudentCourses = courseService.getStudentCourses;
-export const getFeaturedCourses = courseService.getFeaturedCourses;
+export const getCoursesByCategory = courseService.getCoursesByCategory;
+export const getCoursesByLevel = courseService.getCoursesByLevel;
 export const getCoursesByInstructor = courseService.getCoursesByInstructor;
+export const getFeaturedCourses = courseService.getFeaturedCourses;
 export const updateCourse = courseService.updateCourse;
 export const publishCourse = courseService.publishCourse;
 export const unpublishCourse = courseService.unpublishCourse;
 export const archiveCourse = courseService.archiveCourse;
 export const deleteCourse = courseService.deleteCourse;
+export const getEnrolledCourses = courseService.getEnrolledCourses;
+export const enrollStudent = courseService.enrollStudent;
+export const updateProgress = courseService.updateProgress;
+export const getAvailableCourses = courseService.getAvailableCourses;
 export const updateEnrollmentCount = courseService.updateEnrollmentCount;
 export const updateCourseRating = courseService.updateCourseRating;
 export const incrementCourseViews = courseService.incrementCourseViews;
-export const getCoursesByCategory = courseService.getCoursesByCategory;
 export const getCourseStats = courseService.getCourseStats;
 export const getTotalCourses = courseService.getTotalCourses;
 export const validateCourseData = courseService.validateCourseData;

@@ -138,16 +138,16 @@ const StudentDashboard = () => {
     }
   )
 
+  // ✅ FIXED: Use the new getTeachersForStudent method
   const {
     data: teachers = [],
     isLoading: teachersLoading,
     error: teachersError
   } = useQuery(
-    ['teachers'],
-    () => userService.getAllUsers({ role: 'teacher', status: 'active' }),
+    ['teachers', studentId],
+    () => userService.getTeachersForStudent(studentId),
     {
       enabled: !!studentId && isApproved,
-      select: (data) => data.filter(user => user.role === 'teacher' && user.isActive),
       onError: (error) => {
         console.error('Error fetching teachers:', error)
         setError('Failed to load teacher information')
@@ -308,8 +308,9 @@ const StudentDashboard = () => {
     return 'from-blue-500 to-cyan-500'
   }, [])
 
+  // ✅ FIXED: teacher lookup uses teacher.id
   const getTeacherName = useCallback((teacherId) => {
-    const teacher = teachers.find(t => t.uid === teacherId)
+    const teacher = teachers.find(t => t.id === teacherId)
     return teacher?.displayName || teacher?.email?.split('@')[0] || 'Unknown Teacher'
   }, [teachers])
 
@@ -421,10 +422,11 @@ const StudentDashboard = () => {
     { value: 'qna', label: 'Q&A Sessions' }
   ]
 
+  // ✅ FIXED: teacher options use teacher.id and displayName
   const teacherOptions = [
     { value: 'all', label: 'All Teachers' },
     ...teachers.map(teacher => ({
-      value: teacher.uid,
+      value: teacher.id,
       label: teacher.displayName || teacher.email?.split('@')[0] || 'Unknown Teacher'
     }))
   ]
@@ -583,7 +585,7 @@ const StudentDashboard = () => {
         </div>
       )}
 
-      {/* Stats Grid - FIXED: Simplified className structure */}
+      {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 xl:grid-cols-4">
         {statCards.map((stat, index) => {
           const Icon = stat.icon

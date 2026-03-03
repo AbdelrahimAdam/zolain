@@ -45,15 +45,15 @@ const AdminLayout = ({ children }) => {
   }
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/40 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900/10 overflow-hidden relative">
+    <div className="flex h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-cyan-50/40 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900/10 overflow-hidden relative">
       {/* 3D Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Floating orbs */}
-        <div className="absolute -top-20 -left-20 w-72 h-72 bg-gradient-to-r from-blue-400/10 to-purple-500/10 rounded-full blur-3xl animate-float"></div>
-        <div className="absolute -bottom-32 -right-20 w-96 h-96 bg-gradient-to-r from-purple-400/10 to-pink-500/10 rounded-full blur-3xl animate-float-delayed"></div>
+        {/* Floating orbs - changed to blue/cyan */}
+        <div className="absolute -top-20 -left-20 w-72 h-72 bg-gradient-to-r from-blue-400/10 to-cyan-500/10 rounded-full blur-3xl animate-float"></div>
+        <div className="absolute -bottom-32 -right-20 w-96 h-96 bg-gradient-to-r from-cyan-400/10 to-blue-500/10 rounded-full blur-3xl animate-float-delayed"></div>
         
-        {/* Grid pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(99,102,241,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(99,102,241,0.03)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,black,transparent)]"></div>
+        {/* Grid pattern - subtle blue */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,black,transparent)]"></div>
       </div>
 
       {/* Sidebar Backdrop Overlay */}
@@ -80,7 +80,7 @@ const AdminLayout = ({ children }) => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
         {/* Static Header - Doesn't scroll */}
-        <div className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm dark:shadow-gray-900/20">
+        <div className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-blue-200/50 dark:border-gray-700/50 shadow-sm dark:shadow-gray-900/20">
           <Header 
             onMenuClick={() => setSidebarOpen(!sidebarOpen)}
             isDarkMode={darkMode}
@@ -93,15 +93,15 @@ const AdminLayout = ({ children }) => {
         <main className="flex-1 overflow-auto">
           <div className="p-4 sm:p-6 lg:p-8 h-full">
             {/* Enhanced Admin Welcome Banner with 3D effect */}
-            <div className="mb-8 p-6 bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl border border-white/50 dark:border-gray-700/50 shadow-2xl shadow-blue-500/5 dark:shadow-gray-900/20 relative overflow-hidden transform transition-all duration-300 hover:shadow-3xl hover:shadow-blue-500/10 dark:hover:shadow-purple-500/10 hover:-translate-y-0.5">
+            <div className="mb-8 p-6 bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl border border-blue-100/50 dark:border-gray-700/50 shadow-2xl shadow-blue-500/5 dark:shadow-gray-900/20 relative overflow-hidden transform transition-all duration-300 hover:shadow-3xl hover:shadow-blue-500/10 dark:hover:shadow-blue-500/10 hover:-translate-y-0.5">
               {/* Background gradient */}
-              <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 via-purple-500/5 to-blue-500/5"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-cyan-500/5 to-blue-500/5"></div>
               
               {/* Shine effect */}
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500/50 to-transparent"></div>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"></div>
               
               <div className="flex items-center space-x-4 relative z-10">
-                <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/25 dark:shadow-red-500/50 transform transition-transform duration-300 group-hover:scale-110">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/25 dark:shadow-blue-500/50 transform transition-transform duration-300 group-hover:scale-110">
                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
                   </svg>
@@ -129,7 +129,7 @@ const AdminLayout = ({ children }) => {
         </main>
 
         {/* Enhanced Footer */}
-        <footer className="sticky bottom-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-t border-gray-200/50 dark:border-gray-700/50 py-3 px-6 z-20">
+        <footer className="sticky bottom-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-t border-blue-200/50 dark:border-gray-700/50 py-3 px-6 z-20">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center space-x-4 text-gray-600 dark:text-gray-400">
               <span className="font-medium bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-300 dark:to-gray-100 bg-clip-text text-transparent">
@@ -157,7 +157,7 @@ const AdminLayout = ({ children }) => {
       {!sidebarOpen && isMobile && (
         <button
           onClick={() => setSidebarOpen(true)}
-          className="fixed bottom-6 left-6 z-40 w-12 h-12 bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl shadow-2xl shadow-red-500/25 flex items-center justify-center text-white transition-all duration-300 hover:scale-110 hover:shadow-3xl hover:shadow-red-500/40"
+          className="fixed bottom-6 left-6 z-40 w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl shadow-2xl shadow-blue-500/25 flex items-center justify-center text-white transition-all duration-300 hover:scale-110 hover:shadow-3xl hover:shadow-blue-500/40"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />

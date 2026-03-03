@@ -53,7 +53,7 @@ const Header = ({ onMenuClick, isDarkMode, toggleDarkMode }) => {
 
   const getRoleBadgeColor = (role) => {
     switch (role) {
-      case 'admin': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+      case 'admin': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
       case 'teacher': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
       case 'student': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
@@ -61,7 +61,7 @@ const Header = ({ onMenuClick, isDarkMode, toggleDarkMode }) => {
   }
 
   return (
-    <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-b border-white/20 dark:border-gray-700/50 sticky top-0 z-40 transition-all duration-300">
+    <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-b border-blue-100/50 dark:border-gray-700/50 sticky top-0 z-40 transition-all duration-300">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Left side - Mobile menu and search */}
@@ -69,7 +69,7 @@ const Header = ({ onMenuClick, isDarkMode, toggleDarkMode }) => {
             {/* Mobile menu button */}
             <button
               onClick={onMenuClick}
-              className="lg:hidden p-2 rounded-lg bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm border border-white/20 dark:border-gray-600/50 text-gray-600 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-600/80 transition-all duration-200 hover:scale-105 hover:shadow-lg"
+              className="lg:hidden p-2 rounded-lg bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm border border-blue-100/50 dark:border-gray-600/50 text-gray-600 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-600/80 transition-all duration-200 hover:scale-105 hover:shadow-lg"
             >
               <Menu size={20} />
             </button>
@@ -82,7 +82,7 @@ const Header = ({ onMenuClick, isDarkMode, toggleDarkMode }) => {
               <input
                 type="text"
                 placeholder={t('common.search')}
-                className="pl-10 pr-4 py-2 w-64 bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm border border-white/20 dark:border-gray-600/50 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                className="pl-10 pr-4 py-2 w-64 bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm border border-blue-100/50 dark:border-gray-600/50 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
               />
             </div>
           </div>
@@ -94,7 +94,7 @@ const Header = ({ onMenuClick, isDarkMode, toggleDarkMode }) => {
               variant="ghost"
               size="sm"
               onClick={toggleLanguage}
-              className="hidden sm:flex items-center space-x-2 rtl:space-x-reverse px-3 py-2 rounded-xl bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm border border-white/20 dark:border-gray-600/50 hover:bg-white/80 dark:hover:bg-gray-600/80 transition-all duration-200 hover:scale-105"
+              className="hidden sm:flex items-center space-x-2 rtl:space-x-reverse px-3 py-2 rounded-xl bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm border border-blue-100/50 dark:border-gray-600/50 hover:bg-white/80 dark:hover:bg-gray-600/80 transition-all duration-200 hover:scale-105"
             >
               <span className="text-sm font-medium">
                 {i18n.language === 'en' ? 'العربية' : 'English'}
@@ -104,7 +104,7 @@ const Header = ({ onMenuClick, isDarkMode, toggleDarkMode }) => {
             {/* Dark mode toggle */}
             <button
               onClick={toggleDarkMode}
-              className="p-2 rounded-xl bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm border border-white/20 dark:border-gray-600/50 text-gray-600 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-600/80 transition-all duration-200 hover:scale-105 hover:shadow-lg"
+              className="p-2 rounded-xl bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm border border-blue-100/50 dark:border-gray-600/50 text-gray-600 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-600/80 transition-all duration-200 hover:scale-105 hover:shadow-lg"
             >
               {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
@@ -113,14 +113,14 @@ const Header = ({ onMenuClick, isDarkMode, toggleDarkMode }) => {
             <div className="relative" ref={notificationsRef}>
               <button
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                className="p-2 rounded-xl bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm border border-white/20 dark:border-gray-600/50 text-gray-600 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-600/80 transition-all duration-200 hover:scale-105 hover:shadow-lg relative"
+                className="p-2 rounded-xl bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm border border-blue-100/50 dark:border-gray-600/50 text-gray-600 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-600/80 transition-all duration-200 hover:scale-105 hover:shadow-lg relative"
               >
                 <Bell size={18} />
                 <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-gray-800"></span>
               </button>
 
               {isNotificationsOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 dark:border-gray-700/50 py-2 z-50 transform origin-top-right transition-all duration-200 scale-95 hover:scale-100">
+                <div className="absolute right-0 mt-2 w-80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-2xl shadow-2xl border border-blue-100/50 dark:border-gray-700/50 py-2 z-50 transform origin-top-right transition-all duration-200 scale-95 hover:scale-100">
                   <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
                       {t('notifications.title')}
@@ -139,10 +139,10 @@ const Header = ({ onMenuClick, isDarkMode, toggleDarkMode }) => {
             <div className="relative" ref={profileRef}>
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center space-x-3 rtl:space-x-reverse p-2 rounded-xl bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm border border-white/20 dark:border-gray-600/50 text-gray-600 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-600/80 transition-all duration-200 hover:scale-105 hover:shadow-lg group"
+                className="flex items-center space-x-3 rtl:space-x-reverse p-2 rounded-xl bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm border border-blue-100/50 dark:border-gray-600/50 text-gray-600 dark:text-gray-300 hover:bg-white/80 dark:hover:bg-gray-600/80 transition-all duration-200 hover:scale-105 hover:shadow-lg group"
               >
                 <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white text-sm font-bold">
                     {user?.displayName?.charAt(0) || user?.email?.charAt(0) || 'U'}
                   </div>
                   <div className="hidden sm:block text-left rtl:text-right">
@@ -158,7 +158,7 @@ const Header = ({ onMenuClick, isDarkMode, toggleDarkMode }) => {
               </button>
 
               {isProfileOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 dark:border-gray-700/50 py-2 z-50 transform origin-top-right transition-all duration-200 scale-95 hover:scale-100">
+                <div className="absolute right-0 mt-2 w-64 bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-2xl shadow-2xl border border-blue-100/50 dark:border-gray-700/50 py-2 z-50 transform origin-top-right transition-all duration-200 scale-95 hover:scale-100">
                   {/* User info */}
                   <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                     <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">

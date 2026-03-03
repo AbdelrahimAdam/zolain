@@ -57,15 +57,15 @@ const Layout = ({ children, role = 'student' }) => {
     }
   }, [closeSidebar]);
 
-  // Role-based background gradients
+  // Role-based background gradients – now in blue/cyan family
   const getBackgroundGradient = () => {
     switch (role) {
       case 'admin':
-        return 'bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-gray-900 dark:to-purple-900';
+        return 'bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-blue-900/30';
       case 'teacher':
-        return 'bg-gradient-to-br from-blue-50 to-cyan-100 dark:from-gray-900 dark:to-blue-900';
+        return 'bg-gradient-to-br from-cyan-50 to-blue-100 dark:from-gray-900 dark:to-cyan-900/30';
       case 'student':
-        return 'bg-gradient-to-br from-green-50 to-emerald-100 dark:from-gray-900 dark:to-green-900';
+        return 'bg-gradient-to-br from-green-50 to-emerald-100 dark:from-gray-900 dark:to-green-900/30';
       default:
         return 'bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800';
     }
@@ -73,11 +73,11 @@ const Layout = ({ children, role = 'student' }) => {
 
   return (
     <div className={`min-h-screen ${getBackgroundGradient()} transition-colors duration-300`}>
-      {/* Decorative Background Blobs */}
+      {/* Decorative Background Blobs - now blue/cyan */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 dark:bg-blue-900 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-20 animate-pulse" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-200 dark:bg-purple-900 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-20 animate-pulse delay-1000" />
-        <div className="absolute top-40 left-1/2 w-80 h-80 bg-pink-200 dark:bg-pink-900 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-20 animate-pulse delay-500" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-200 dark:bg-cyan-900 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-20 animate-pulse delay-1000" />
+        <div className="absolute top-40 left-1/2 w-80 h-80 bg-indigo-200 dark:bg-indigo-900 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-20 animate-pulse delay-500" />
       </div>
 
       <div className="relative z-10 flex h-screen overflow-hidden">
@@ -94,7 +94,7 @@ const Layout = ({ children, role = 'student' }) => {
         <aside
           className={`
             fixed inset-y-0 left-0 z-50 w-80 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl
-            border-r border-white/20 dark:border-gray-700/50 shadow-2xl
+            border-r border-blue-100/50 dark:border-gray-700/50 shadow-2xl
             transform transition-transform duration-300 ease-in-out
             lg:translate-x-0 lg:static lg:inset-auto
             ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}

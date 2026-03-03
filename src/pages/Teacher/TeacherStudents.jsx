@@ -37,14 +37,16 @@ const TeacherStudents = () => {
   const loadStudents = async () => {
     try {
       setLoading(true)
-      // In a real app, you'd have a service to get teacher's students
-      const allUsers = await userService.getAllUsers()
-      const teacherStudents = allUsers.filter(user => 
-        user.role === 'student' && user.isActive
-      )
-      setStudents(teacherStudents)
+      // Fetch only active students – this query is now allowed by security rules
+      const allUsers = await userService.getAllUsers({ 
+        role: 'student', 
+        status: 'active' 
+      })
+      // No need to filter further; the query already returns only active students
+      setStudents(allUsers)
     } catch (error) {
       console.error('Error loading students:', error)
+      // Optional: show a user-friendly toast/notification here
     } finally {
       setLoading(false)
     }

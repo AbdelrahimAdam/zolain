@@ -11,7 +11,8 @@ import {
   limit,
   writeBatch,
   deleteDoc,
-  serverTimestamp
+  serverTimestamp,
+  FieldPath
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -307,6 +308,65 @@ export const userService = {
     } catch (error) {
       console.error('❌ Error fetching users:', error);
       throw new Error(`Failed to fetch users: ${error.message}`);
+    }
+  },
+
+  // ===== NEW METHOD FOR STUDENTS =====
+  // Get teachers assigned to a specific student (based on teacherIds array)
+  getTeachersForStudent: async (studentId) => {
+    try {
+      console.log('🔄 Fetching teachers for student:', studentId);
+      
+      // 1. Get the student's profile to retrieve teacherIds
+      const studentDoc = await getDoc(doc(db, 'users', studentId));
+      if (!studentDoc.exists()) {
+        console.warn('⚠️ Student profile not found:', studentId);
+        return [];
+      }
+      
+      const studentData = studentDoc.data();
+      const teacherIds = studentData.teacherIds || [];
+      
+      if (teacherIds.length === 0) {
+        console.log('ℹ️ No teachers assigned to this student');
+        return [];
+      }
+      
+      // 2. Query the users collection for documents with IDs in teacherIds
+      // Firestore 'in' queries support up to 10 values; if more, we need multiple queries
+      const chunkSize = 10;
+      const teacherPromises = [];
+      
+      for (let i = 0; i < teacherIds.length; i += chunkSize) {
+        const chunk = teacherIds.slice(i, i + chunkSize);
+        const q = query(
+          collection(db, 'users'),
+          where(FieldPath.documentId(), 'in', chunk)
+        );
+        teacherPromises.push(getDocs(q));
+      }
+      
+      const snapshots = await Promise.all(teacherPromises);
+      const teachers = [];
+      
+      snapshots.forEach(snapshot => {
+        snapshot.forEach(doc => {
+          const userData = doc.data();
+          teachers.push({
+            id: doc.id,
+            ...userData,
+            createdAt: userData.createdAt?.toDate?.(),
+            updatedAt: userData.updatedAt?.toDate?.(),
+            lastLogin: userData.lastLogin?.toDate?.(),
+          });
+        });
+      });
+      
+      console.log(`✅ Fetched ${teachers.length} teachers for student ${studentId}`);
+      return teachers;
+    } catch (error) {
+      console.error('❌ Error fetching teachers for student:', error);
+      throw new Error(`Failed to fetch teachers: ${error.message}`);
     }
   },
 

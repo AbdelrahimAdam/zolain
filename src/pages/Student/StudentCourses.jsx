@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../hooks/useAuth'
 import { courseService } from '../../services'
+import { useNavigate } from 'react-router-dom'
 import Button from '../../components/UI/Button.jsx'
 import LoadingSpinner from '../../components/UI/LoadingSpinner.jsx'
 import {
@@ -15,18 +16,20 @@ import {
   PlayCircle,
   Bookmark,
   TrendingUp,
-  Award,
-  CheckCircle
+  Award
 } from 'lucide-react'
 
 const StudentCourses = () => {
   const { t } = useTranslation()
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [courses, setCourses] = useState([])
   const [enrolledCourses, setEnrolledCourses] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
+  const [error, setError] = useState(null)
+  const [enrolling, setEnrolling] = useState({})
 
   const studentId = user?.uid
 
@@ -39,14 +42,16 @@ const StudentCourses = () => {
   const loadCourses = async () => {
     try {
       setLoading(true)
+      setError(null)
       const [allCourses, enrolled] = await Promise.all([
-        courseService.getPublishedCourses(),
+        courseService.getPublishedCourses(50),
         courseService.getEnrolledCourses(studentId)
       ])
       setCourses(allCourses)
       setEnrolledCourses(enrolled)
     } catch (error) {
       console.error('Error loading courses:', error)
+      setError('Failed to load courses. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -54,12 +59,21 @@ const StudentCourses = () => {
 
   const handleEnrollCourse = async (courseId) => {
     try {
+      setEnrolling(prev => ({ ...prev, [courseId]: true }))
+      setError(null)
       await courseService.enrollStudent(courseId, studentId)
-      await loadCourses() // Refresh the list
+      // After enrollment, navigate to the course detail page
+      navigate(`/student/courses/${courseId}`)
     } catch (error) {
       console.error('Error enrolling in course:', error)
-      alert('Failed to enroll in course')
+      setError('Failed to enroll. Please try again.')
+    } finally {
+      setEnrolling(prev => ({ ...prev, [courseId]: false }))
     }
+  }
+
+  const handleContinueCourse = (courseId) => {
+    navigate(`/student/courses/${courseId}`)
   }
 
   const isEnrolled = (courseId) => {
@@ -101,80 +115,65 @@ const StudentCourses = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Browse Courses</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+            Browse Courses
+          </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Discover and enroll in new learning opportunities
           </p>
         </div>
-        <Button onClick={loadCourses} variant="outline">
+        <Button onClick={loadCourses} variant="outline" className="border-blue-300 dark:border-blue-700">
           <TrendingUp className="h-4 w-4 mr-2" />
           Refresh
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Enrolled</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.enrolled}</p>
-            </div>
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <BookOpen className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">In Progress</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.inProgress}</p>
-            </div>
-            <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-              <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Completed</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.completed}</p>
-            </div>
-            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-              <Award className="h-6 w-6 text-green-600 dark:text-green-400" />
-            </div>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+        <StatCard
+          label="Enrolled"
+          value={stats.enrolled}
+          icon={BookOpen}
+          color="from-blue-500 to-cyan-500"
+        />
+        <StatCard
+          label="In Progress"
+          value={stats.inProgress}
+          icon={Clock}
+          color="from-yellow-500 to-orange-500"
+        />
+        <StatCard
+          label="Completed"
+          value={stats.completed}
+          icon={Award}
+          color="from-green-500 to-emerald-500"
+        />
       </div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+      <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl border border-blue-100/50 dark:border-gray-700/50 p-4 sm:p-6 shadow-2xl">
         <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
           <div className="flex-1">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search courses..."
+                placeholder="Search courses by title, description, or instructor..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-blue-200 dark:border-gray-600 bg-white/50 dark:bg-gray-700/50 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
-          <div className="flex space-x-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-3 rounded-xl border border-blue-200 dark:border-gray-600 bg-white/50 dark:bg-gray-700/50 focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Categories</option>
               <option value="programming">Programming</option>
@@ -183,7 +182,7 @@ const StudentCourses = () => {
               <option value="marketing">Marketing</option>
               <option value="language">Language</option>
             </select>
-            <Button variant="outline">
+            <Button variant="outline" className="border-blue-200 dark:border-gray-600">
               <Filter className="h-4 w-4 mr-2" />
               Filters
             </Button>
@@ -191,18 +190,27 @@ const StudentCourses = () => {
         </div>
       </div>
 
+      {/* Error Alert */}
+      {error && (
+        <div className="bg-red-50/80 dark:bg-red-900/30 backdrop-blur-lg border border-red-200/50 dark:border-red-800/50 rounded-2xl p-4 flex items-center">
+          <span className="text-red-700 dark:text-red-300 text-sm">{error}</span>
+          <button onClick={() => setError(null)} className="ml-auto text-red-500">✕</button>
+        </div>
+      )}
+
       {/* Courses Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredCourses.map((course) => {
           const enrolled = isEnrolled(course.id)
+          const isEnrolling = enrolling[course.id]
           
           return (
             <div
               key={course.id}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-all duration-300"
+              className="group bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-blue-100/50 dark:border-gray-700/50 overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105"
             >
               {/* Course Image */}
-              <div className="h-48 bg-gradient-to-br from-purple-500 to-pink-500 relative">
+              <div className="h-48 bg-gradient-to-br from-blue-500 to-cyan-500 relative">
                 {course.thumbnailUrl ? (
                   <img
                     src={course.thumbnailUrl}
@@ -216,17 +224,17 @@ const StudentCourses = () => {
                 )}
                 <div className="absolute top-4 right-4">
                   {enrolled ? (
-                    <span className="px-3 py-1 bg-green-500 text-white rounded-full text-xs font-medium">
+                    <span className="px-3 py-1 bg-green-500 text-white rounded-full text-xs font-medium shadow-lg">
                       Enrolled
                     </span>
                   ) : (
-                    <span className="px-3 py-1 bg-blue-500 text-white rounded-full text-xs font-medium">
+                    <span className="px-3 py-1 bg-blue-500 text-white rounded-full text-xs font-medium shadow-lg">
                       Available
                     </span>
                   )}
                 </div>
                 <div className="absolute bottom-4 left-4">
-                  <span className="px-3 py-1 bg-black bg-opacity-50 text-white rounded-full text-sm">
+                  <span className="px-3 py-1 bg-black/50 backdrop-blur-sm text-white rounded-full text-sm">
                     {formatDuration(course.duration)}
                   </span>
                 </div>
@@ -251,7 +259,7 @@ const StudentCourses = () => {
                   <div className="flex items-center space-x-4">
                     <span className="flex items-center">
                       <Users className="h-4 w-4 mr-1" />
-                      {course.studentsCount || 0} students
+                      {course.studentsCount || 0}
                     </span>
                     <span className="flex items-center">
                       <Clock className="h-4 w-4 mr-1" />
@@ -274,14 +282,18 @@ const StudentCourses = () => {
                     <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
                       {course.instructorName?.charAt(0) || 'I'}
                     </div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                    <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[100px]">
                       {course.instructorName}
                     </span>
                   </div>
 
                   <div className="flex space-x-2">
                     {enrolled ? (
-                      <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleContinueCourse(course.id)}
+                        className="bg-gradient-to-r from-green-500 to-emerald-500 text-white"
+                      >
                         <PlayCircle className="h-4 w-4 mr-1" />
                         Continue
                       </Button>
@@ -289,12 +301,17 @@ const StudentCourses = () => {
                       <Button 
                         size="sm"
                         onClick={() => handleEnrollCourse(course.id)}
-                        className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
+                        disabled={isEnrolling}
+                        className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white"
                       >
-                        Enroll Now
+                        {isEnrolling ? (
+                          <LoadingSpinner size="sm" className="mr-1" />
+                        ) : (
+                          'Enroll Now'
+                        )}
                       </Button>
                     )}
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="border-blue-200 dark:border-gray-600">
                       <Bookmark className="h-4 w-4" />
                     </Button>
                   </div>
@@ -306,7 +323,7 @@ const StudentCourses = () => {
       </div>
 
       {filteredCourses.length === 0 && (
-        <div className="text-center py-12">
+        <div className="text-center py-12 bg-white/50 dark:bg-gray-800/50 rounded-3xl border border-blue-100/50 dark:border-gray-700/50">
           <BookOpen className="mx-auto h-16 w-16 text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             No courses found
@@ -322,5 +339,19 @@ const StudentCourses = () => {
     </div>
   )
 }
+
+const StatCard = ({ label, value, icon: Icon, color }) => (
+  <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl border border-blue-100/50 dark:border-gray-700/50 p-6 shadow-lg hover:shadow-xl transition group">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{label}</p>
+        <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
+      </div>
+      <div className={`p-3 rounded-xl bg-gradient-to-br ${color} shadow-lg`}>
+        <Icon className="h-6 w-6 text-white" />
+      </div>
+    </div>
+  </div>
+)
 
 export default StudentCourses

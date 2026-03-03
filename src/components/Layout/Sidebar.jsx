@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth.jsx'
-import { 
-  Home, 
-  Video, 
-  Users, 
-  BarChart3, 
+import { notificationService } from '../../services/notificationService' // real service
+import { messageService } from '../../services/messageService' // real service
+import {
+  Home,
+  Video,
+  Users,
+  BarChart3,
   Settings,
   BookOpen,
   Menu,
@@ -40,9 +42,13 @@ const Sidebar = ({ isOpen, onClose, userRole = 'student' }) => {
   const isRTL = i18n.language === 'ar'
   const [darkMode, setDarkMode] = useState(false)
 
+  // Real-time counts for notifications and messages
+  const [unreadNotifications, setUnreadNotifications] = useState(0)
+  const [unreadMessages, setUnreadMessages] = useState(0)
+
   // Initialize dark mode
   useEffect(() => {
-    const isDark = localStorage.getItem('theme') === 'dark' || 
+    const isDark = localStorage.getItem('theme') === 'dark' ||
       window.matchMedia('(prefers-color-scheme: dark)').matches
     setDarkMode(isDark)
   }, [])
@@ -54,150 +60,183 @@ const Sidebar = ({ isOpen, onClose, userRole = 'student' }) => {
     document.documentElement.classList.toggle('dark', newDarkMode)
   }
 
-  // Role-based menu configuration
+  // Fetch real counts from services
+  useEffect(() => {
+    const fetchCounts = async () => {
+      if (!user?.uid) return
+      try {
+        const notifCount = await notificationService.getUnreadCount(user.uid)
+        setUnreadNotifications(notifCount)
+        const msgCount = await messageService.getUnreadCount(user.uid)
+        setUnreadMessages(msgCount)
+      } catch (error) {
+        console.error('Error fetching counts:', error)
+      }
+    }
+
+    fetchCounts()
+
+    // Optionally set up realtime listeners
+    const unsubscribeNotif = notificationService.onUnreadChange?.(user.uid, setUnreadNotifications)
+    const unsubscribeMsg = messageService.onUnreadChange?.(user.uid, setUnreadMessages)
+
+    return () => {
+      if (unsubscribeNotif) unsubscribeNotif()
+      if (unsubscribeMsg) unsubscribeMsg()
+    }
+  }, [user])
+
+  // Role-based menu configuration – "recordings" renamed to "lessons"
   const menuConfig = {
     admin: [
-      { 
-        id: 'dashboard', 
-        label: t('sidebar.dashboard', 'Dashboard'), 
-        icon: Home, 
+      {
+        id: 'dashboard',
+        label: t('sidebar.dashboard', 'Dashboard'),
+        icon: Home,
         path: '/admin/dashboard',
         description: t('sidebar.dashboard_desc', 'Overview and statistics')
       },
-      { 
-        id: 'users', 
-        label: t('sidebar.users', 'User Management'), 
-        icon: Users, 
+      {
+        id: 'users',
+        label: t('sidebar.users', 'User Management'),
+        icon: Users,
         path: '/admin/users',
         description: t('sidebar.users_desc', 'Manage all users and permissions')
       },
-      { 
-        id: 'courses', 
-        label: t('sidebar.courses', 'Course Management'), 
-        icon: BookOpen, 
+      {
+        id: 'courses',
+        label: t('sidebar.courses', 'Course Management'),
+        icon: BookOpen,
         path: '/admin/courses',
         description: t('sidebar.courses_desc', 'Manage courses and content')
       },
-      { 
-        id: 'sessions', 
-        label: t('sidebar.sessions', 'Session Management'), 
-        icon: Video, 
+      {
+        id: 'lessons',
+        label: t('sidebar.lessons', 'Lessons'),
+        icon: Video,
+        path: '/admin/lessons',
+        description: t('sidebar.lessons_desc', 'Manage lesson videos')
+      },
+      {
+        id: 'sessions',
+        label: t('sidebar.sessions', 'Session Management'),
+        icon: Video,
         path: '/admin/sessions',
         description: t('sidebar.sessions_desc', 'Google Meet sessions monitoring')
       },
-      { 
-        id: 'analytics', 
-        label: t('sidebar.analytics', 'Analytics'), 
-        icon: BarChart3, 
+      {
+        id: 'analytics',
+        label: t('sidebar.analytics', 'Analytics'),
+        icon: BarChart3,
         path: '/admin/analytics',
         description: t('sidebar.analytics_desc', 'Platform insights and metrics')
       },
-      { 
-        id: 'reports', 
-        label: t('sidebar.reports', 'Reports'), 
-        icon: FileText, 
+      {
+        id: 'reports',
+        label: t('sidebar.reports', 'Reports'),
+        icon: FileText,
         path: '/admin/reports',
         description: t('sidebar.reports_desc', 'System reports and exports')
       },
     ],
     teacher: [
-      { 
-        id: 'dashboard', 
-        label: t('sidebar.dashboard', 'Dashboard'), 
-        icon: Home, 
+      {
+        id: 'dashboard',
+        label: t('sidebar.dashboard', 'Dashboard'),
+        icon: Home,
         path: '/teacher/dashboard',
         description: t('sidebar.dashboard_desc', 'Teaching overview and insights')
       },
-      { 
-        id: 'recordings', 
-        label: t('sidebar.recordings', 'My Recordings'), 
-        icon: Video, 
-        path: '/teacher/recordings',
-        description: t('sidebar.recordings_desc', 'Manage your class recordings')
+      {
+        id: 'lessons',
+        label: t('sidebar.lessons', 'My Lessons'),
+        icon: Video,
+        path: '/teacher/lessons',
+        description: t('sidebar.lessons_desc', 'Manage your lesson videos')
       },
-      { 
-        id: 'sessions', 
-        label: t('sidebar.sessions', 'My Sessions'), 
-        icon: Calendar, 
+      {
+        id: 'sessions',
+        label: t('sidebar.sessions', 'My Sessions'),
+        icon: Calendar,
         path: '/teacher/sessions',
         description: t('sidebar.sessions_desc', 'Schedule and manage sessions')
       },
-      { 
-        id: 'students', 
-        label: t('sidebar.students', 'Students'), 
-        icon: Users, 
+      {
+        id: 'students',
+        label: t('sidebar.students', 'Students'),
+        icon: Users,
         path: '/teacher/students',
         description: t('sidebar.students_desc', 'Manage your students')
       },
-      { 
-        id: 'my-courses', 
-        label: t('sidebar.my_courses', 'My Courses'), 
-        icon: BookOpen, 
+      {
+        id: 'my-courses',
+        label: t('sidebar.my_courses', 'My Courses'),
+        icon: BookOpen,
         path: '/teacher/my-courses',
         description: t('sidebar.my_courses_desc', 'Your teaching courses')
       },
-      { 
-        id: 'analytics', 
-        label: t('sidebar.analytics', 'Analytics'), 
-        icon: BarChart3, 
+      {
+        id: 'analytics',
+        label: t('sidebar.analytics', 'Analytics'),
+        icon: BarChart3,
         path: '/teacher/analytics',
         description: t('sidebar.analytics_desc', 'Teaching performance insights')
       },
-      { 
-        id: 'messages', 
-        label: t('sidebar.messages', 'Messages'), 
-        icon: MessageSquare, 
+      {
+        id: 'messages',
+        label: t('sidebar.messages', 'Messages'),
+        icon: MessageSquare,
         path: '/teacher/messages',
         description: t('sidebar.messages_desc', 'Communicate with students')
       },
     ],
     student: [
-      { 
-        id: 'dashboard', 
-        label: t('sidebar.dashboard', 'Dashboard'), 
-        icon: Home, 
+      {
+        id: 'dashboard',
+        label: t('sidebar.dashboard', 'Dashboard'),
+        icon: Home,
         path: '/student/dashboard',
         description: t('sidebar.dashboard_desc', 'Learning overview and progress')
       },
-      { 
-        id: 'sessions', 
-        label: t('sidebar.sessions', 'Learning Sessions'), 
-        icon: Calendar, 
+      {
+        id: 'sessions',
+        label: t('sidebar.sessions', 'Learning Sessions'),
+        icon: Calendar,
         path: '/student/sessions',
         description: t('sidebar.sessions_desc', 'Join live sessions and classes')
       },
-      { 
-        id: 'recordings', 
-        label: t('sidebar.recordings', 'Recordings'), 
-        icon: Video, 
-        path: '/student/recordings',
-        description: t('sidebar.recordings_desc', 'Watch recorded sessions')
+      {
+        id: 'lessons',
+        label: t('sidebar.lessons', 'Lessons'),
+        icon: Video,
+        path: '/student/lessons',
+        description: t('sidebar.lessons_desc', 'Watch recorded lessons')
       },
-      { 
-        id: 'courses', 
-        label: t('sidebar.courses', 'Browse Courses'), 
-        icon: BookOpen, 
+      {
+        id: 'courses',
+        label: t('sidebar.courses', 'Browse Courses'),
+        icon: BookOpen,
         path: '/student/courses',
         description: t('sidebar.courses_desc', 'Discover and enroll in courses')
       },
-      { 
-        id: 'my-courses', 
-        label: t('sidebar.my_courses', 'My Courses'), 
-        icon: BookOpen, 
+      {
+        id: 'my-courses',
+        label: t('sidebar.my_courses', 'My Courses'),
+        icon: BookOpen,
         path: '/student/my-courses',
         description: t('sidebar.my_courses_desc', 'Your enrolled courses')
       },
-      { 
-        id: 'progress', 
-        label: t('sidebar.progress', 'Progress'), 
-        icon: TrendingUp, 
+      {
+        id: 'progress',
+        label: t('sidebar.progress', 'Progress'),
+        icon: TrendingUp,
         path: '/student/progress',
         description: t('sidebar.progress_desc', 'Track your learning progress')
       },
-      { 
-        id: 'teachers', 
-        label: t('sidebar.teachers', 'Teachers'), 
-        icon: Users, 
+      {
+        id: 'teachers',
+        label: t('sidebar.teachers', 'Teachers'),
+        icon: Users,
         path: '/student/teachers',
         description: t('sidebar.teachers_desc', 'View available teachers')
       },
@@ -206,38 +245,38 @@ const Sidebar = ({ isOpen, onClose, userRole = 'student' }) => {
 
   // Common routes for all roles
   const commonRoutes = [
-    { 
-      id: 'notifications', 
-      label: t('sidebar.notifications', 'Notifications'), 
-      icon: Bell, 
+    {
+      id: 'notifications',
+      label: t('sidebar.notifications', 'Notifications'),
+      icon: Bell,
       path: '/notifications',
       description: t('sidebar.notifications_desc', 'View your notifications')
     },
-    { 
-      id: 'messages', 
-      label: t('sidebar.messages', 'Messages'), 
-      icon: MessageCircle, 
+    {
+      id: 'messages',
+      label: t('sidebar.messages', 'Messages'),
+      icon: MessageCircle,
       path: '/messages',
       description: t('sidebar.messages_desc', 'Check your messages')
     },
-    { 
-      id: 'profile', 
-      label: t('sidebar.profile', 'Profile'), 
-      icon: User, 
+    {
+      id: 'profile',
+      label: t('sidebar.profile', 'Profile'),
+      icon: User,
       path: '/profile',
       description: t('sidebar.profile_desc', 'Manage your profile settings')
     },
-    { 
-      id: 'subscription', 
-      label: t('sidebar.subscription', 'Subscription'), 
-      icon: CreditCard, 
+    {
+      id: 'subscription',
+      label: t('sidebar.subscription', 'Subscription'),
+      icon: CreditCard,
       path: '/subscription',
       description: t('sidebar.subscription_desc', 'Manage your subscription')
     },
-    { 
-      id: 'help', 
-      label: t('sidebar.help', 'Help & Support'), 
-      icon: HelpCircle, 
+    {
+      id: 'help',
+      label: t('sidebar.help', 'Help & Support'),
+      icon: HelpCircle,
       path: '/help',
       description: t('sidebar.help_desc', 'Get help and support')
     },
@@ -273,9 +312,10 @@ const Sidebar = ({ isOpen, onClose, userRole = 'student' }) => {
     }
   }
 
+  // Role colors (same as original)
   const getRoleColors = () => {
     switch (userRole) {
-      case 'admin': 
+      case 'admin':
         return {
           gradient: 'from-purple-500 to-violet-600',
           bgGradient: 'from-purple-500/15 to-violet-600/15',
@@ -283,7 +323,7 @@ const Sidebar = ({ isOpen, onClose, userRole = 'student' }) => {
           bg: 'bg-purple-100/80 dark:bg-purple-900/40',
           border: 'border-purple-200/50 dark:border-purple-700/50'
         }
-      case 'teacher': 
+      case 'teacher':
         return {
           gradient: 'from-blue-500 to-cyan-600',
           bgGradient: 'from-blue-500/15 to-cyan-600/15',
@@ -291,7 +331,7 @@ const Sidebar = ({ isOpen, onClose, userRole = 'student' }) => {
           bg: 'bg-blue-100/80 dark:bg-blue-900/40',
           border: 'border-blue-200/50 dark:border-blue-700/50'
         }
-      case 'student': 
+      case 'student':
         return {
           gradient: 'from-green-500 to-emerald-600',
           bgGradient: 'from-green-500/15 to-emerald-600/15',
@@ -299,7 +339,7 @@ const Sidebar = ({ isOpen, onClose, userRole = 'student' }) => {
           bg: 'bg-green-100/80 dark:bg-green-900/40',
           border: 'border-green-200/50 dark:border-green-700/50'
         }
-      default: 
+      default:
         return {
           gradient: 'from-gray-500 to-gray-600',
           bgGradient: 'from-gray-500/15 to-gray-600/15',
@@ -341,25 +381,25 @@ const Sidebar = ({ isOpen, onClose, userRole = 'student' }) => {
       ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       flex flex-col h-screen
     `}>
-      
-      {/* Static Header */}
+
+      {/* Static Header with Logo */}
       <div className="flex-shrink-0">
         <div className="flex items-center justify-between h-20 px-6 border-b border-white/30 dark:border-gray-700/30">
           <div className="flex items-center space-x-3 rtl:space-x-reverse">
-            <div className="relative">
-              <div className={`w-12 h-12 bg-gradient-to-br ${roleColors.gradient} rounded-2xl flex items-center justify-center shadow-lg backdrop-blur-sm`}>
-                <Video className="h-6 w-6 text-white" />
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 border-2 border-white dark:border-gray-900 rounded-full shadow-sm"></div>
-            </div>
+            {/* Logo image – small vertical rectangle */}
+            <img
+              src="/logo.jpeg"
+              alt="Zolain"
+              className="h-10 w-auto object-contain rounded-sm"
+            />
             <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Unique Foundation
+              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                Zolain
               </h1>
               <p className="text-xs text-gray-600 dark:text-gray-400 capitalize">{userRole} Portal</p>
             </div>
           </div>
-          
+
           {/* Close button for mobile */}
           <button
             onClick={onClose}
@@ -414,7 +454,7 @@ const Sidebar = ({ isOpen, onClose, userRole = 'student' }) => {
             {menuItems.map((item) => {
               const Icon = item.icon
               const active = isActive(item.path)
-              
+
               return (
                 <button
                   key={item.id}
@@ -429,22 +469,22 @@ const Sidebar = ({ isOpen, onClose, userRole = 'student' }) => {
                   {active && (
                     <div className={`absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-gradient-to-b ${roleColors.gradient} rounded-r-full shadow-sm`}></div>
                   )}
-                  
+
                   <div className={`p-2 rounded-xl transition-all duration-300 backdrop-blur-sm ${
-                    active 
-                      ? `bg-gradient-to-br ${roleColors.gradient} shadow-lg` 
+                    active
+                      ? `bg-gradient-to-br ${roleColors.gradient} shadow-lg`
                       : 'bg-white/50 dark:bg-gray-800/50 group-hover:bg-white/70 dark:group-hover:bg-gray-700/50'
                   }`}>
-                    <Icon 
-                      size={20} 
+                    <Icon
+                      size={20}
                       className={
-                        active 
-                          ? 'text-white' 
+                        active
+                          ? 'text-white'
                           : 'text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200'
-                      } 
+                      }
                     />
                   </div>
-                  
+
                   <div className={`${isRTL ? 'mr-3' : 'ml-3'} flex-1 min-w-0`}>
                     <span className="font-medium block text-sm truncate">{item.label}</span>
                     <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-gray-600 dark:text-gray-400 truncate">
@@ -465,7 +505,12 @@ const Sidebar = ({ isOpen, onClose, userRole = 'student' }) => {
               {commonRoutes.map((item) => {
                 const Icon = item.icon
                 const active = isActive(item.path)
-                
+
+                // Determine badge count from real data
+                let badgeCount = null
+                if (item.id === 'notifications') badgeCount = unreadNotifications
+                if (item.id === 'messages') badgeCount = unreadMessages
+
                 return (
                   <button
                     key={item.id}
@@ -476,23 +521,23 @@ const Sidebar = ({ isOpen, onClose, userRole = 'student' }) => {
                         : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-gray-800/50 border border-transparent'
                     }`}
                   >
-                    <Icon 
-                      size={18} 
+                    <Icon
+                      size={18}
                       className={
-                        active 
+                        active
                           ? roleColors.text
                           : 'text-gray-600 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200'
-                      } 
+                      }
                     />
-                    
+
                     <span className={`${isRTL ? 'mr-3' : 'ml-3'} font-medium text-sm flex-1 text-left`}>
                       {item.label}
                     </span>
 
-                    {/* Notification badges */}
-                    {(item.id === 'notifications' || item.id === 'messages') && (
+                    {/* Real‑time notification badges */}
+                    {badgeCount > 0 && (
                       <span className="px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full min-w-[20px] text-center backdrop-blur-sm shadow-sm">
-                        3
+                        {badgeCount > 9 ? '9+' : badgeCount}
                       </span>
                     )}
                   </button>

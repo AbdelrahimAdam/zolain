@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../hooks/useAuth'
 import { recordingService } from '../../services'
+import { useNavigate } from 'react-router-dom' // 👈 added
 import Button from '../../components/UI/Button.jsx'
 import LoadingSpinner from '../../components/UI/LoadingSpinner.jsx'
-import CreateRecordingModal from '../../components/Recording/CreateRecordingModal.jsx'
+import CreateLessonModal from '../../components/UI/CreateLessonModal.jsx'
 import {
   Video,
   Plus,
@@ -14,20 +15,20 @@ import {
   PlayCircle,
   Eye,
   Edit,
-  Download,
-  Share,
   MoreVertical,
   CheckCircle,
   Clock,
   XCircle,
   TrendingUp,
-  Users
+  Users,
+  Youtube
 } from 'lucide-react'
 
 const TeacherRecordings = () => {
   const { t } = useTranslation()
   const { user } = useAuth()
-  const [recordings, setRecordings] = useState([])
+  const navigate = useNavigate() // 👈 added
+  const [lessons, setLessons] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -38,66 +39,62 @@ const TeacherRecordings = () => {
 
   useEffect(() => {
     if (teacherId) {
-      loadRecordings()
+      loadLessons()
     }
   }, [teacherId])
 
-  const loadRecordings = async () => {
+  const loadLessons = async () => {
     try {
       setLoading(true)
-      const allRecordings = await recordingService.getAllRecordings()
-      // Filter recordings for this teacher
-      const teacherRecordings = allRecordings.filter(recording => 
-        recording.teacherId === teacherId || recording.createdBy === teacherId
-      )
-      setRecordings(teacherRecordings)
+      const teacherLessons = await recordingService.getTeacherVideos(teacherId, { limit: 100 })
+      setLessons(teacherLessons)
     } catch (error) {
-      console.error('Error loading recordings:', error)
+      console.error('Error loading lessons:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const handlePublishRecording = async (recordingId) => {
+  const handlePublishLesson = async (lessonId) => {
     try {
-      setActionLoading(prev => ({ ...prev, [recordingId]: true }))
-      await recordingService.publishRecording(recordingId)
-      await loadRecordings()
+      setActionLoading(prev => ({ ...prev, [lessonId]: true }))
+      await recordingService.publishVideo(lessonId)
+      await loadLessons()
     } catch (error) {
-      console.error('Error publishing recording:', error)
+      console.error('Error publishing lesson:', error)
     } finally {
-      setActionLoading(prev => ({ ...prev, [recordingId]: false }))
+      setActionLoading(prev => ({ ...prev, [lessonId]: false }))
     }
   }
 
-  const handleUnpublishRecording = async (recordingId) => {
+  const handleUnpublishLesson = async (lessonId) => {
     try {
-      setActionLoading(prev => ({ ...prev, [recordingId]: true }))
-      await recordingService.unpublishRecording(recordingId)
-      await loadRecordings()
+      setActionLoading(prev => ({ ...prev, [lessonId]: true }))
+      await recordingService.unpublishVideo(lessonId)
+      await loadLessons()
     } catch (error) {
-      console.error('Error unpublishing recording:', error)
+      console.error('Error unpublishing lesson:', error)
     } finally {
-      setActionLoading(prev => ({ ...prev, [recordingId]: false }))
+      setActionLoading(prev => ({ ...prev, [lessonId]: false }))
     }
   }
 
-  const handleRecordingCreated = () => {
+  const handleLessonCreated = () => {
     setShowCreateModal(false)
-    loadRecordings()
+    loadLessons()
   }
 
-  const filteredRecordings = recordings.filter(recording => {
+  const filteredLessons = lessons.filter(lesson => {
     const matchesSearch = 
-      recording.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      recording.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      recording.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      lesson.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lesson.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lesson.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
     
     const matchesStatus = 
       statusFilter === 'all' ||
-      recording.status === statusFilter ||
-      (statusFilter === 'published' && recording.isPublished) ||
-      (statusFilter === 'unpublished' && !recording.isPublished)
+      lesson.status === statusFilter ||
+      (statusFilter === 'published' && lesson.isPublished) ||
+      (statusFilter === 'unpublished' && !lesson.isPublished)
 
     return matchesSearch && matchesStatus
   })
@@ -134,13 +131,6 @@ const TeacherRecordings = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  const formatFileSize = (bytes) => {
-    if (!bytes) return '0 B'
-    const sizes = ['B', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(1024))
-    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i]
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
@@ -154,9 +144,9 @@ const TeacherRecordings = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Recordings</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Lessons</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Manage and publish your recording sessions
+            Manage and publish your video lessons
           </p>
         </div>
         <Button 
@@ -164,65 +154,16 @@ const TeacherRecordings = () => {
           className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
         >
           <Plus className="h-4 w-4 mr-2" />
-          New Recording
+          New Lesson
         </Button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{recordings.length}</p>
-            </div>
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <Video className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Published</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {recordings.filter(r => r.isPublished).length}
-              </p>
-            </div>
-            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-              <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Views</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {recordings.reduce((sum, r) => sum + (r.views || 0), 0)}
-              </p>
-            </div>
-            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-              <Eye className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">In Progress</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {recordings.filter(r => r.status === 'recording' || r.status === 'processing').length}
-              </p>
-            </div>
-            <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-              <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
-            </div>
-          </div>
-        </div>
+        <StatCard label="Total" value={lessons.length} icon={Video} color="blue" />
+        <StatCard label="Published" value={lessons.filter(l => l.isPublished).length} icon={CheckCircle} color="green" />
+        <StatCard label="Total Views" value={lessons.reduce((sum, l) => sum + (l.views || 0), 0)} icon={Eye} color="purple" />
+        <StatCard label="In Progress" value={lessons.filter(l => l.status === 'processing').length} icon={Clock} color="yellow" />
       </div>
 
       {/* Filters */}
@@ -233,7 +174,7 @@ const TeacherRecordings = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search recordings..."
+                placeholder="Search lessons..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -250,9 +191,7 @@ const TeacherRecordings = () => {
               <option value="published">Published</option>
               <option value="unpublished">Unpublished</option>
               <option value="completed">Completed</option>
-              <option value="recording">Recording</option>
               <option value="processing">Processing</option>
-              <option value="failed">Failed</option>
             </select>
             <Button variant="outline">
               <Filter className="h-4 w-4 mr-2" />
@@ -262,105 +201,85 @@ const TeacherRecordings = () => {
         </div>
       </div>
 
-      {/* Recordings Grid */}
+      {/* Lessons Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredRecordings.map((recording) => {
-          const StatusIcon = getStatusIcon(recording.status)
+        {filteredLessons.map((lesson) => {
+          const StatusIcon = getStatusIcon(lesson.status)
+          const thumbnail = lesson.thumbnailUrl || `https://img.youtube.com/vi/${lesson.youtubeId}/hqdefault.jpg`
           
           return (
             <div
-              key={recording.id}
+              key={lesson.id}
               className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-all duration-300"
             >
-              {/* Recording Header */}
-              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 dark:text-white text-lg line-clamp-2">
-                      {recording.title}
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm mt-1 line-clamp-2">
-                      {recording.description || 'No description provided'}
-                    </p>
-                  </div>
-                  <div className={`ml-3 p-2 rounded-lg bg-gradient-to-br ${getStatusColor(recording.status)}`}>
-                    <StatusIcon className="h-4 w-4 text-white" />
-                  </div>
+              {/* Thumbnail */}
+              <div className="h-48 bg-gradient-to-br from-red-500 to-red-600 relative">
+                <img
+                  src={thumbnail}
+                  alt={lesson.title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => { e.target.src = 'https://via.placeholder.com/640x360?text=No+Thumbnail' }}
+                />
+                <div className="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-sm">
+                  {formatDuration(lesson.duration)}
                 </div>
-
-                <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-                  <span className="flex items-center">
-                    <Eye className="h-4 w-4 mr-1" />
-                    {recording.views || 0} views
-                  </span>
-                  <span className="flex items-center">
-                    <Clock className="h-4 w-4 mr-1" />
-                    {formatDuration(recording.duration)}
-                  </span>
-                  {recording.isPublished && (
-                    <span className="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded-full text-xs">
-                      Published
-                    </span>
-                  )}
-                </div>
+                {!lesson.isPublished && (
+                  <div className="absolute top-2 left-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs">
+                    Draft
+                  </div>
+                )}
               </div>
 
-              {/* Recording Details */}
+              {/* Content */}
               <div className="p-6">
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">File Size</span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {formatFileSize(recording.fileSize)}
+                <h3 className="font-semibold text-gray-900 dark:text-white text-lg line-clamp-2 mb-2">
+                  {lesson.title}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-3">
+                  {lesson.description || 'No description'}
+                </p>
+
+                <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center">
+                      <Eye className="h-4 w-4 mr-1" />
+                      {lesson.views || 0}
+                    </span>
+                    <span className="flex items-center">
+                      <Clock className="h-4 w-4 mr-1" />
+                      {formatDuration(lesson.duration)}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Created</span>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {new Date(recording.createdAt).toLocaleDateString()}
+                  {lesson.category && (
+                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-xs rounded-full">
+                      {lesson.category}
                     </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Status</span>
-                    <span className={`text-sm font-medium capitalize ${
-                      recording.status === 'completed' ? 'text-green-600 dark:text-green-400' :
-                      recording.status === 'recording' ? 'text-blue-600 dark:text-blue-400' :
-                      recording.status === 'processing' ? 'text-yellow-600 dark:text-yellow-400' :
-                      'text-red-600 dark:text-red-400'
-                    }`}>
-                      {recording.status}
-                    </span>
-                  </div>
+                  )}
                 </div>
 
                 {/* Action Buttons */}
                 <div className="flex space-x-2">
-                  {recording.recordingUrl && (
-                    <a
-                      href={recording.recordingUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1"
-                    >
-                      <Button className="w-full">
-                        <PlayCircle className="h-4 w-4 mr-2" />
-                        Watch
-                      </Button>
-                    </a>
-                  )}
+                  {/* ✅ Changed from <a> to Button with navigate */}
+                  <Button
+                    onClick={() => navigate(`/recording/${lesson.id}`)}
+                    className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                  >
+                    <Youtube className="h-4 w-4 mr-2" />
+                    Watch
+                  </Button>
                   
-                  {recording.isPublished ? (
+                  {lesson.isPublished ? (
                     <Button
                       variant="outline"
-                      onClick={() => handleUnpublishRecording(recording.id)}
-                      disabled={actionLoading[recording.id]}
+                      onClick={() => handleUnpublishLesson(lesson.id)}
+                      disabled={actionLoading[lesson.id]}
                     >
                       <XCircle className="h-4 w-4" />
                     </Button>
                   ) : (
                     <Button
-                      onClick={() => handlePublishRecording(recording.id)}
-                      disabled={actionLoading[recording.id]}
+                      onClick={() => handlePublishLesson(lesson.id)}
+                      disabled={actionLoading[lesson.id]}
                     >
                       <CheckCircle className="h-4 w-4" />
                     </Button>
@@ -376,16 +295,16 @@ const TeacherRecordings = () => {
         })}
       </div>
 
-      {filteredRecordings.length === 0 && (
+      {filteredLessons.length === 0 && (
         <div className="text-center py-12">
           <Video className="mx-auto h-16 w-16 text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            No recordings found
+            No lessons found
           </h3>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             {searchTerm || statusFilter !== 'all'
               ? 'Try adjusting your search or filters'
-              : 'Get started by creating your first recording'
+              : 'Get started by creating your first lesson'
             }
           </p>
           <Button 
@@ -393,18 +312,42 @@ const TeacherRecordings = () => {
             className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Create Recording
+            Create Lesson
           </Button>
         </div>
       )}
 
-      {/* Create Recording Modal */}
+      {/* Create Lesson Modal */}
       {showCreateModal && (
-        <CreateRecordingModal
+        <CreateLessonModal
           onClose={() => setShowCreateModal(false)}
-          onSuccess={handleRecordingCreated}
+          onSuccess={handleLessonCreated}
         />
       )}
+    </div>
+  )
+}
+
+// Stat Card Component
+const StatCard = ({ label, value, icon: Icon, color }) => {
+  const colorClasses = {
+    blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
+    green: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
+    purple: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
+    yellow: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400',
+  }
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{label}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
+        </div>
+        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
+          <Icon className="h-6 w-6" />
+        </div>
+      </div>
     </div>
   )
 }
