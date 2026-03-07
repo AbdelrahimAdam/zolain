@@ -26,16 +26,19 @@ const LessonCard = ({ lesson, isTeacher = false }) => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'published': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-      case 'draft': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+      case 'published':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+      case 'draft':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
   };
 
   return (
     <div
       onClick={handleClick}
-      className="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-blue-100 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer"
+      className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-blue-100/50 dark:border-gray-700/50 overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer flex flex-col h-full"
     >
       {/* Thumbnail */}
       <div className="relative aspect-video bg-gray-200 dark:bg-gray-700">
@@ -48,7 +51,7 @@ const LessonCard = ({ lesson, isTeacher = false }) => {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500 to-red-600">
-            <Youtube size={48} className="text-white" />
+            <Youtube size={40} className="text-white" />
           </div>
         )}
 
@@ -70,32 +73,32 @@ const LessonCard = ({ lesson, isTeacher = false }) => {
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-2 line-clamp-2">
+      <div className="p-3 sm:p-4 flex-1 flex flex-col">
+        <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base line-clamp-2 mb-2">
           {lesson.title}
         </h3>
 
         {lesson.description && (
-          <p className="text-gray-600 dark:text-gray-400 text-sm mb-3 line-clamp-2">
+          <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-3 line-clamp-2 flex-1">
             {lesson.description}
           </p>
         )}
 
         {/* Metadata */}
-        <div className="space-y-2 text-sm text-gray-500 dark:text-gray-400">
+        <div className="space-y-2 text-xs text-gray-500 dark:text-gray-400">
           <div className="flex items-center">
-            <Calendar size={16} className={`${isRTL ? 'ml-2' : 'mr-2'}`} />
-            <span>{format(new Date(lesson.createdAt), 'PPP', { locale: i18n.language })}</span>
+            <Calendar size={14} className={`${isRTL ? 'ml-2' : 'mr-2'} flex-shrink-0`} />
+            <span className="truncate">{format(new Date(lesson.createdAt), 'PPP', { locale: i18n.language })}</span>
           </div>
 
           <div className="flex items-center">
-            <Users size={16} className={`${isRTL ? 'ml-2' : 'mr-2'}`} />
-            <span>{lesson.instructorName || 'Unknown'}</span>
+            <Users size={14} className={`${isRTL ? 'ml-2' : 'mr-2'} flex-shrink-0`} />
+            <span className="truncate">{lesson.instructorName || 'Unknown'}</span>
           </div>
 
           {lesson.views !== undefined && (
             <div className="flex items-center">
-              <Eye size={16} className={`${isRTL ? 'ml-2' : 'mr-2'}`} />
+              <Eye size={14} className={`${isRTL ? 'ml-2' : 'mr-2'} flex-shrink-0`} />
               <span>{lesson.views} views</span>
             </div>
           )}
@@ -109,9 +112,9 @@ const LessonCard = ({ lesson, isTeacher = false }) => {
 
         {/* Teacher actions */}
         {isTeacher && (
-          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex space-x-2 rtl:space-x-reverse">
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-2">
             {!lesson.isPublished && (
-              <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+              <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs ${getStatusColor('draft')}`}>
                 Draft
               </span>
             )}

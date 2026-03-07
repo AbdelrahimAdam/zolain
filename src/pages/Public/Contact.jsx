@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Send, Clock } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, Clock, MessageCircle } from 'lucide-react';
 import Button from '../../components/UI/Button';
 
 const Contact = () => {
@@ -15,33 +15,55 @@ const Contact = () => {
     setTimeout(() => setSubmitted(false), 5000);
   };
 
+  // WhatsApp link – replace with your actual number (include country code, no plus)
+  const whatsappNumber = '249903806123'; 
+  const whatsappLink = `https://wa.me/${whatsappNumber}`;
+
   return (
     <div className="max-w-5xl mx-auto">
       <h1 className="text-4xl font-bold text-center mb-4 bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
         Contact Zolain
       </h1>
       <p className="text-center text-gray-600 dark:text-gray-300 mb-12">
-        Have questions? We're here to help.
+        Have questions? We're here to help – reach out anytime!
       </p>
 
       <div className="grid md:grid-cols-2 gap-8">
         {/* Contact Info */}
         <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-blue-100/50 p-8 space-y-6">
           <h2 className="text-2xl font-bold mb-4">Get in Touch</h2>
+
+          {/* WhatsApp – new */}
+          <a
+            href={whatsappLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-start space-x-4 p-3 rounded-xl hover:bg-green-50 dark:hover:bg-green-900/20 transition group"
+          >
+            <MessageCircle className="h-6 w-6 text-green-500 flex-shrink-0 group-hover:scale-110 transition" />
+            <div>
+              <p className="font-medium">WhatsApp</p>
+              <p className="text-gray-600 dark:text-gray-400">Chat with us directly</p>
+              <span className="text-sm text-green-600 dark:text-green-400">Click to open WhatsApp</span>
+            </div>
+          </a>
+
           <div className="flex items-start space-x-4">
             <MapPin className="h-6 w-6 text-blue-500 flex-shrink-0" />
             <div>
               <p className="font-medium">Address</p>
-              <p className="text-gray-600 dark:text-gray-400">Al Amarat, Khartoum, Sudan</p>
+              <p className="text-gray-600 dark:text-gray-400"> Khartoum, Sudan</p>
             </div>
           </div>
+
           <div className="flex items-start space-x-4">
             <Phone className="h-6 w-6 text-blue-500 flex-shrink-0" />
             <div>
               <p className="font-medium">Phone</p>
-              <p className="text-gray-600 dark:text-gray-400">+249 123 456 789</p>
+              <p className="text-gray-600 dark:text-gray-400">+249 903806123</p>
             </div>
           </div>
+
           <div className="flex items-start space-x-4">
             <Mail className="h-6 w-6 text-blue-500 flex-shrink-0" />
             <div>
@@ -49,6 +71,7 @@ const Contact = () => {
               <p className="text-gray-600 dark:text-gray-400">info@zolain.com</p>
             </div>
           </div>
+
           <div className="flex items-start space-x-4">
             <Clock className="h-6 w-6 text-blue-500 flex-shrink-0" />
             <div>
@@ -108,6 +131,19 @@ const Contact = () => {
             </form>
           )}
         </div>
+      </div>
+
+      {/* Additional WhatsApp CTA for mobile users */}
+      <div className="mt-8 text-center md:hidden">
+        <a
+          href={whatsappLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center gap-2 bg-green-500 text-white px-6 py-3 rounded-full font-medium shadow-lg hover:bg-green-600 transition"
+        >
+          <MessageCircle className="h-5 w-5" />
+          Chat on WhatsApp
+        </a>
       </div>
     </div>
   );

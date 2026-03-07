@@ -6,102 +6,76 @@ import Header from '../Layout/Header'
 const AdminLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
   const { user } = useAuth()
 
-  // Check mobile screen and initialize dark mode
+  // Initialize dark mode
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-    
-    const isDark = localStorage.getItem('darkMode') === 'true' || 
-      window.matchMedia('(prefers-color-scheme: dark)').matches
-    
-    setDarkMode(isDark)
-    document.documentElement.classList.toggle('dark', isDark)
-    checkMobile()
-    
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
+    const savedTheme = localStorage.getItem('theme')
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    const shouldBeDark = savedTheme === 'dark' || (!savedTheme && systemPrefersDark)
+    setDarkMode(shouldBeDark)
+    document.documentElement.classList.toggle('dark', shouldBeDark)
   }, [])
 
   const toggleDarkMode = () => {
     const newDarkMode = !darkMode
     setDarkMode(newDarkMode)
-    localStorage.setItem('darkMode', newDarkMode)
+    localStorage.setItem('theme', newDarkMode ? 'dark' : 'light')
     document.documentElement.classList.toggle('dark', newDarkMode)
   }
 
-  // Close sidebar when clicking on mobile overlay
-  const handleOverlayClick = () => {
-    if (isMobile) {
-      setSidebarOpen(false)
-    }
-  }
-
-  if (!user) {
-    return children
-  }
+  if (!user) return children
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-cyan-50/40 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900/10 overflow-hidden relative">
-      {/* 3D Background Elements */}
+      {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Floating orbs - changed to blue/cyan */}
-        <div className="absolute -top-20 -left-20 w-72 h-72 bg-gradient-to-r from-blue-400/10 to-cyan-500/10 rounded-full blur-3xl animate-float"></div>
-        <div className="absolute -bottom-32 -right-20 w-96 h-96 bg-gradient-to-r from-cyan-400/10 to-blue-500/10 rounded-full blur-3xl animate-float-delayed"></div>
-        
-        {/* Grid pattern - subtle blue */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,black,transparent)]"></div>
+        <div className="absolute -top-20 -left-20 w-72 h-72 bg-gradient-to-r from-blue-400/10 to-cyan-500/10 rounded-full blur-3xl animate-float" />
+        <div className="absolute -bottom-32 -right-20 w-96 h-96 bg-gradient-to-r from-cyan-400/10 to-blue-500/10 rounded-full blur-3xl animate-float-delayed" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,black,transparent)]" />
       </div>
 
-      {/* Sidebar Backdrop Overlay */}
-      {sidebarOpen && isMobile && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300"
-          onClick={handleOverlayClick}
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
-      <div className={`
-        fixed md:relative z-50 transition-all duration-500 ease-in-out
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        ${isMobile ? 'w-80' : 'w-72'}
-      `}>
-        <Sidebar 
-          isOpen={sidebarOpen} 
+      {/* Sidebar – slides in on mobile */}
+      <aside
+        className={`
+          fixed inset-y-0 left-0 z-50 w-64 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl
+          border-r border-blue-100/50 dark:border-gray-700/50 shadow-2xl
+          transform transition-transform duration-300 ease-in-out
+          lg:translate-x-0 lg:static lg:inset-auto
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
+        <Sidebar
+          isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
           isDarkMode={darkMode}
         />
-      </div>
+      </aside>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 relative z-10">
-        {/* Static Header - Doesn't scroll */}
-        <div className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-blue-200/50 dark:border-gray-700/50 shadow-sm dark:shadow-gray-900/20">
-          <Header 
-            onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-            isDarkMode={darkMode}
-            toggleDarkMode={toggleDarkMode}
-            sidebarOpen={sidebarOpen}
-          />
-        </div>
-        
-        {/* Scrollable Page Content */}
-        <main className="flex-1 overflow-auto">
-          <div className="p-4 sm:p-6 lg:p-8 h-full">
-            {/* Enhanced Admin Welcome Banner with 3D effect */}
-            <div className="mb-8 p-6 bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl border border-blue-100/50 dark:border-gray-700/50 shadow-2xl shadow-blue-500/5 dark:shadow-gray-900/20 relative overflow-hidden transform transition-all duration-300 hover:shadow-3xl hover:shadow-blue-500/10 dark:hover:shadow-blue-500/10 hover:-translate-y-0.5">
-              {/* Background gradient */}
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-cyan-500/5 to-blue-500/5"></div>
-              
-              {/* Shine effect */}
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"></div>
-              
-              <div className="flex items-center space-x-4 relative z-10">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/25 dark:shadow-blue-500/50 transform transition-transform duration-300 group-hover:scale-110">
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
+        <Header
+          onMenuClick={() => setSidebarOpen(true)}
+          isDarkMode={darkMode}
+          toggleDarkMode={toggleDarkMode}
+          sidebarOpen={sidebarOpen}
+        />
+
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-4 sm:p-6 lg:p-8">
+            {/* Admin welcome banner */}
+            <div className="mb-8 p-6 bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl border border-blue-100/50 dark:border-gray-700/50 shadow-2xl relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-cyan-500/5 to-blue-500/5" />
+              <div className="relative flex items-center space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg">
                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
                   </svg>
@@ -111,53 +85,40 @@ const AdminLayout = ({ children }) => {
                     Admin Dashboard
                   </h2>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Manage platform users, courses, and sessions with enhanced controls
+                    Manage platform users, courses, and sessions
                   </p>
                 </div>
-                <div className="hidden sm:flex items-center space-x-2 px-3 py-1 bg-green-500/10 dark:bg-green-500/20 rounded-full border border-green-500/20">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <div className="hidden sm:flex items-center space-x-2 px-3 py-1 bg-green-500/10 rounded-full border border-green-500/20">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                   <span className="text-xs font-medium text-green-700 dark:text-green-400">System Active</span>
                 </div>
               </div>
             </div>
-            
-            {/* Children content with enhanced styling */}
-            <div className="transform transition-all duration-300">
-              {children}
-            </div>
+
+            {children}
           </div>
         </main>
 
-        {/* Enhanced Footer */}
-        <footer className="sticky bottom-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-t border-blue-200/50 dark:border-gray-700/50 py-3 px-6 z-20">
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center space-x-4 text-gray-600 dark:text-gray-400">
-              <span className="font-medium bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-300 dark:to-gray-100 bg-clip-text text-transparent">
-                Admin Panel v2.0
-              </span>
-              <span className="hidden md:inline text-gray-400">•</span>
-              <span className="hidden md:inline text-gray-500 dark:text-gray-500">
-                Secure Management Console
-              </span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
-                <div className="relative">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-ping absolute"></div>
-                  <div className="w-2 h-2 bg-green-500 rounded-full relative"></div>
-                </div>
-                <span className="text-xs font-medium">All Systems Operational</span>
-              </span>
+        {/* Footer */}
+        <footer className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-t border-blue-200/50 dark:border-gray-700/50 py-3 px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+            <span className="font-medium">Admin Panel v2.0</span>
+            <div className="flex items-center space-x-2 mt-1 sm:mt-0">
+              <div className="relative">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-ping absolute" />
+                <div className="w-2 h-2 bg-green-500 rounded-full relative" />
+              </div>
+              <span className="text-xs">All Systems Operational</span>
             </div>
           </div>
         </footer>
       </div>
 
-      {/* Mobile sidebar toggle button */}
-      {!sidebarOpen && isMobile && (
+      {/* Mobile floating menu button */}
+      {!sidebarOpen && (
         <button
           onClick={() => setSidebarOpen(true)}
-          className="fixed bottom-6 left-6 z-40 w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl shadow-2xl shadow-blue-500/25 flex items-center justify-center text-white transition-all duration-300 hover:scale-110 hover:shadow-3xl hover:shadow-blue-500/40"
+          className="fixed bottom-6 left-6 z-40 lg:hidden w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl shadow-2xl flex items-center justify-center text-white hover:scale-110 transition"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />

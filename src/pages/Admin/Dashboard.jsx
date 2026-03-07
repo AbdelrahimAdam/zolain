@@ -44,7 +44,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../../config/firebase.jsx'
 
-// ---------- Helper Components ----------
+// ---------- Helper Components (unchanged) ----------
 const StatCard = ({ stat, index, loading }) => {
   const Icon = stat.icon
   return (
@@ -1304,8 +1304,8 @@ const AdminDashboard = () => {
                 </div>
               </div>
             )}
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+            {/* Stats Grid - Two columns on mobile */}
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {statCards.map((stat, index) => (
                 <StatCard key={stat.name} stat={stat} index={index} loading={statsLoading} />
               ))}
@@ -1506,7 +1506,7 @@ const AdminDashboard = () => {
                   <div className="animate-spin-slow rounded-full h-8 w-8 border-4 border-purple-200 border-t-purple-600"></div>
                 </div>
               ) : courses.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {courses.map((course) => {
                     const formatTimeAgo = (date) => {
                       if (!date) return 'Never'

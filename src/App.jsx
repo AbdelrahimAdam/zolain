@@ -25,6 +25,8 @@ import TeacherRecordings from '@/pages/Teacher/TeacherRecordings.jsx';
 import TeacherSessions from '@/pages/Teacher/TeacherSessions.jsx';
 import TeacherStudents from '@/pages/Teacher/TeacherStudents.jsx';
 import TeacherCourses from '@/pages/Teacher/TeacherCourses.jsx';
+import CreateSessionPage from '@/pages/Teacher/CreateSessionPage.jsx';
+import CreateRecordingPage from '@/pages/Teacher/CreateRecordingPage.jsx';   // 👈 NEW IMPORT
 
 // Student pages
 import StudentSessions from '@/pages/Student/StudentSessions.jsx';
@@ -139,7 +141,7 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   return children
 }
 
-// ✅ Public Only Route (for login/register)
+// ✅ Public Only Route
 const PublicOnlyRoute = ({ children }) => {
   const { user, userRole, loading } = useAuth()
 
@@ -257,8 +259,6 @@ const UnauthorizedPage = () => (
     <div className="text-center">🚫 Unauthorized</div>
   </div>
 );
-
-// New placeholders for lessons pages
 const AdminLessons = () => <div className="p-6"><h1 className="text-3xl font-bold">Admin Lessons</h1><p>Manage all lesson videos</p></div>;
 
 // ✅ Main Routes
@@ -302,7 +302,7 @@ function AppRoutes() {
                 <Route path="courses" element={<CourseManagement />} />
                 <Route path="courses/new" element={<CourseEditor />} />
                 <Route path="courses/:courseId/edit" element={<CourseEditor />} />
-                <Route path="lessons" element={<AdminLessons />} />                 {/* NEW lessons route */}
+                <Route path="lessons" element={<AdminLessons />} />
                 <Route path="sessions" element={<SessionManagement />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="reports" element={<ReportsPage />} />
@@ -326,8 +326,10 @@ function AppRoutes() {
               <Routes>
                 <Route path="dashboard" element={<TeacherDashboard />} />
                 <Route path="recordings" element={<TeacherRecordings />} />
-                <Route path="lessons" element={<TeacherRecordings />} />           {/* NEW lessons route (reuses recordings component) */}
+                <Route path="lessons" element={<TeacherRecordings />} />
+                <Route path="recordings/create" element={<CreateRecordingPage />} />   {/* 👈 NEW ROUTE */}
                 <Route path="sessions" element={<TeacherSessions />} />
+                <Route path="sessions/create" element={<CreateSessionPage />} />
                 <Route path="students" element={<TeacherStudents />} />
                 <Route path="courses" element={<TeacherCourses />} />
                 <Route path="courses/new" element={<CourseEditor />} />
@@ -357,7 +359,7 @@ function AppRoutes() {
                 <Route path="dashboard" element={<StudentDashboard />} />
                 <Route path="sessions" element={<StudentSessions />} />
                 <Route path="recordings" element={<StudentRecordings />} />
-                <Route path="lessons" element={<StudentRecordings />} />           {/* NEW lessons route (reuses recordings component) */}
+                <Route path="lessons" element={<StudentRecordings />} />
                 <Route path="courses" element={<StudentCourses />} />
                 <Route path="courses/:courseId" element={<StudentCourseDetail />} />
                 <Route path="my-courses" element={<MyCourses />} />
@@ -427,7 +429,7 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/messages"          // NEW top-level messages route
+        path="/messages"
         element={
           <ProtectedRoute>
             <Layout role={userRole}>

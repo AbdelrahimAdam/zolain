@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { useInfiniteQuery, useQuery } from 'react-query'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import {
   recordingService,
@@ -37,6 +38,7 @@ import {
 const StudentDashboard = () => {
   const { t } = useTranslation()
   const { user, userProfile, loading: authLoading } = useAuth()
+  const navigate = useNavigate()
  
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -68,7 +70,7 @@ const StudentDashboard = () => {
       setRecentSessions(sessions)
     } catch (error) {
       console.error('Error loading recent sessions:', error)
-      setError('Failed to load upcoming sessions')
+      setError(t('student.error.failedToLoadSessions', 'Failed to load upcoming sessions'))
     } finally {
       setLoadingSessions(false)
     }
@@ -84,11 +86,10 @@ const StudentDashboard = () => {
       setTeacherSessions(sessions)
     } catch (error) {
       console.error('Error loading teacher sessions:', error)
-      setError('Failed to load teacher sessions')
+      setError(t('student.error.failedToLoadTeacherSessions', 'Failed to load teacher sessions'))
     }
   }
 
-  // FIXED: Use recording service instead of non-existent session method
   const {
     data: recordingsData,
     fetchNextPage,
@@ -116,7 +117,7 @@ const StudentDashboard = () => {
       refetchOnWindowFocus: false,
       onError: (error) => {
         console.error('Error fetching recordings:', error)
-        setError('Failed to load learning content')
+        setError(t('student.error.failedToLoadContent', 'Failed to load learning content'))
       }
     }
   )
@@ -133,12 +134,11 @@ const StudentDashboard = () => {
       staleTime: 10 * 60 * 1000,
       onError: (error) => {
         console.error('Error fetching courses:', error)
-        setError('Failed to load courses')
+        setError(t('student.error.failedToLoadCourses', 'Failed to load courses'))
       }
     }
   )
 
-  // ✅ FIXED: Use the new getTeachersForStudent method
   const {
     data: teachers = [],
     isLoading: teachersLoading,
@@ -150,7 +150,7 @@ const StudentDashboard = () => {
       enabled: !!studentId && isApproved,
       onError: (error) => {
         console.error('Error fetching teachers:', error)
-        setError('Failed to load teacher information')
+        setError(t('student.error.failedToLoadTeachers', 'Failed to load teacher information'))
       }
     }
   )
@@ -162,10 +162,8 @@ const StudentDashboard = () => {
     }
   }, [studentId, isApproved])
 
-  // Use recordings directly from recording service
   const allRecordings = recordingsData?.pages.flatMap(page => page.recordings || []) || []
 
-  // Enhanced filtering with better performance
   const filteredRecordings = useMemo(() => {
     return allRecordings
       .filter(recording => {
@@ -214,7 +212,6 @@ const StudentDashboard = () => {
       .sort((a, b) => new Date(a.scheduledTime) - new Date(b.scheduledTime))
   }, [teacherSessions, teacherFilter])
 
-  // Enhanced stats calculation
   const stats = useMemo(() => ({
     enrolledClasses: courses.length,
     availableRecordings: allRecordings.filter(r => r.isPublished && r.status === 'completed').length,
@@ -237,22 +234,20 @@ const StudentDashboard = () => {
 
   const handleWatchRecording = useCallback((recording) => {
     if (recording.recordingUrl) {
-      // Track viewing progress
       setActionLoading(prev => ({ ...prev, [recording.id]: true }))
       
-      // Open in new tab for Google Drive links
       if (recording.recordingUrl.includes('drive.google.com')) {
         window.open(recording.recordingUrl, '_blank')
       } else {
-        // For embedded videos, you can implement a modal player
-        console.log('Navigate to recording player:', recording.id)
+        // For embedded videos, navigate to player page
+        navigate(`/recording/${recording.id}`)
       }
       
       setTimeout(() => {
         setActionLoading(prev => ({ ...prev, [recording.id]: false }))
       }, 1000)
     }
-  }, [])
+  }, [navigate])
 
   const handleJoinSession = useCallback((session) => {
     if (session.meetLink || session.googleMeetLink) {
@@ -308,13 +303,11 @@ const StudentDashboard = () => {
     return 'from-blue-500 to-cyan-500'
   }, [])
 
-  // ✅ FIXED: teacher lookup uses teacher.id
   const getTeacherName = useCallback((teacherId) => {
     const teacher = teachers.find(t => t.id === teacherId)
     return teacher?.displayName || teacher?.email?.split('@')[0] || 'Unknown Teacher'
   }, [teachers])
 
-  // Enhanced stat cards with animations
   const statCards = useMemo(() => [
     {
       id: 'enrolled-classes',
@@ -324,8 +317,8 @@ const StudentDashboard = () => {
       change: `${courses.filter(c => c.isPublished).length} active`,
       changeType: 'positive',
       color: 'from-blue-500 to-cyan-500',
-      bgColor: 'from-blue-500/10 to-cyan-500/10',
-      description: 'Your learning journey',
+      bgColor: 'from-blue-500 to-cyan-500',
+      description: t('student.stats.enrolledClassesDesc', 'Your learning journey'),
       loading: coursesLoading
     },
     {
@@ -336,8 +329,8 @@ const StudentDashboard = () => {
       change: `${stats.completedRecordings} watched`,
       changeType: stats.completedRecordings > 0 ? 'positive' : 'neutral',
       color: 'from-green-500 to-emerald-500',
-      bgColor: 'from-green-500/10 to-emerald-500/10',
-      description: 'Ready to watch',
+      bgColor: 'from-green-500 to-emerald-500',
+      description: t('student.stats.availableRecordingsDesc', 'Ready to watch'),
       loading: recordingsLoading
     },
     {
@@ -348,8 +341,8 @@ const StudentDashboard = () => {
       change: `${stats.teacherUpcomingSessions} upcoming`,
       changeType: 'neutral',
       color: 'from-purple-500 to-pink-500',
-      bgColor: 'from-purple-500/10 to-pink-500/10',
-      description: 'Expert instructors',
+      bgColor: 'from-purple-500 to-pink-500',
+      description: t('student.stats.teachersDesc', 'Expert instructors'),
       loading: teachersLoading
     },
     {
@@ -360,78 +353,75 @@ const StudentDashboard = () => {
       change: `${Math.round(stats.totalWatchTime / 3600)} hours watched`,
       changeType: stats.totalProgress > 50 ? 'positive' : 'neutral',
       color: 'from-orange-500 to-red-500',
-      bgColor: 'from-orange-500/10 to-red-500/10',
-      description: 'Your overall progress',
+      bgColor: 'from-orange-500 to-red-500',
+      description: t('student.stats.learningProgressDesc', 'Your overall progress'),
       loading: recordingsLoading
     }
   ], [stats, courses, t, coursesLoading, recordingsLoading, teachersLoading])
 
-  // Enhanced quick actions
   const quickActions = useMemo(() => [
     {
       id: 'browse-classes',
       title: t('student.actions.browseClasses', 'Browse Classes'),
-      description: 'Discover new courses to enroll',
+      description: t('student.actions.browseClassesDesc', 'Discover new courses to enroll'),
       icon: BookOpen,
       color: 'text-blue-600 dark:text-blue-400',
       bgColor: 'bg-blue-500/10 dark:bg-blue-500/20',
-      action: () => (window.location.href = '/courses')
+      action: () => navigate('/courses')
     },
     {
       id: 'upcoming-sessions',
       title: t('student.actions.upcomingSessions', 'Upcoming Sessions'),
-      description: 'Join live classes and meetings',
+      description: t('student.actions.upcomingSessionsDesc', 'Join live classes and meetings'),
       icon: Calendar,
       color: 'text-green-600 dark:text-green-400',
       bgColor: 'bg-green-500/10 dark:bg-green-500/20',
-      action: () => (window.location.href = '/sessions')
+      action: () => navigate('/sessions')
     },
     {
       id: 'teacher-sessions',
       title: t('student.actions.teacherSessions', 'Teacher Sessions'),
-      description: 'View all instructor sessions',
+      description: t('student.actions.teacherSessionsDesc', 'View all instructor sessions'),
       icon: Users,
       color: 'text-purple-600 dark:text-purple-400',
       bgColor: 'bg-purple-500/10 dark:bg-purple-500/20',
-      action: () => (window.location.href = '/sessions?view=teachers')
+      action: () => navigate('/sessions?view=teachers')
     },
     {
       id: 'my-progress',
       title: t('student.actions.myProgress', 'My Progress'),
-      description: 'Track your learning journey',
+      description: t('student.actions.myProgressDesc', 'Track your learning journey'),
       icon: BarChart3,
       color: 'text-orange-600 dark:text-orange-400',
       bgColor: 'bg-orange-500/10 dark:bg-orange-500/20',
-      action: () => (window.location.href = '/progress')
+      action: () => navigate('/progress')
     }
-  ], [t])
+  ], [t, navigate])
 
   const sortOptions = [
-    { value: 'createdAt', label: 'Date Added' },
-    { value: 'title', label: 'Title' },
-    { value: 'duration', label: 'Duration' },
-    { value: 'views', label: 'Popularity' },
-    { value: 'rating', label: 'Rating' }
+    { value: 'createdAt', label: t('student.sort.dateAdded', 'Date Added') },
+    { value: 'title', label: t('student.sort.title', 'Title') },
+    { value: 'duration', label: t('student.sort.duration', 'Duration') },
+    { value: 'views', label: t('student.sort.popularity', 'Popularity') },
+    { value: 'rating', label: t('student.sort.rating', 'Rating') }
   ]
 
   const categoryOptions = [
-    { value: 'all', label: 'All Categories' },
-    { value: 'lecture', label: 'Lectures' },
-    { value: 'tutorial', label: 'Tutorials' },
-    { value: 'workshop', label: 'Workshops' },
-    { value: 'qna', label: 'Q&A Sessions' }
+    { value: 'all', label: t('student.category.all', 'All Categories') },
+    { value: 'lecture', label: t('student.category.lecture', 'Lectures') },
+    { value: 'tutorial', label: t('student.category.tutorial', 'Tutorials') },
+    { value: 'workshop', label: t('student.category.workshop', 'Workshops') },
+    { value: 'qna', label: t('student.category.qna', 'Q&A Sessions') }
   ]
 
-  // ✅ FIXED: teacher options use teacher.id and displayName
   const teacherOptions = [
-    { value: 'all', label: 'All Teachers' },
+    { value: 'all', label: t('student.teacher.all', 'All Teachers') },
     ...teachers.map(teacher => ({
       value: teacher.id,
       label: teacher.displayName || teacher.email?.split('@')[0] || 'Unknown Teacher'
     }))
   ]
 
-  // AUTH GUARD: Loading state
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">
@@ -445,7 +435,6 @@ const StudentDashboard = () => {
     )
   }
 
-  // AUTH GUARD: Not logged in
   if (!studentId) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">
@@ -458,7 +447,7 @@ const StudentDashboard = () => {
             {t('auth.pleaseLogin', 'Please log in to access the student dashboard.')}
           </p>
           <Button
-            onClick={() => (window.location.href = '/login')}
+            onClick={() => navigate('/login')}
             className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg"
           >
             {t('auth.login', 'Sign in')}
@@ -468,7 +457,6 @@ const StudentDashboard = () => {
     )
   }
 
-  // AUTH GUARD: Not approved
   if (!isApproved) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">
@@ -490,9 +478,8 @@ const StudentDashboard = () => {
     )
   }
 
-  // ERROR STATE
   if (recordingsError || coursesError || teachersError) {
-    const error = recordingsError || coursesError || teachersError
+    const errorMsg = recordingsError || coursesError || teachersError
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">
         <div className="text-center max-w-md p-8">
@@ -539,12 +526,12 @@ const StudentDashboard = () => {
             {studentName && (
               <div className="flex items-center mt-2 space-x-2">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Welcome back, <span className="font-semibold text-gray-800 dark:text-gray-200">{studentName}</span>
+                  {t('student.welcome', 'Welcome back')}, <span className="font-semibold text-gray-800 dark:text-gray-200">{studentName}</span>
                 </p>
                 {userProfile?.subscription?.plan === 'premium' && (
                   <span className="px-2 py-1 text-xs bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-full flex items-center">
                     <Crown className="h-3 w-3 mr-1" />
-                    Premium Student
+                    {t('student.premium', 'Premium Student')}
                   </span>
                 )}
               </div>
@@ -561,7 +548,7 @@ const StudentDashboard = () => {
               {t('common.refresh', 'Refresh')}
             </Button>
             <Button
-              onClick={() => (window.location.href = '/courses')}
+              onClick={() => navigate('/courses')}
               className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg"
             >
               <BookOpen className="h-4 w-4 mr-2" />
@@ -585,8 +572,8 @@ const StudentDashboard = () => {
         </div>
       )}
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 xl:grid-cols-4">
+      {/* Stats Grid - Two columns on mobile */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {statCards.map((stat, index) => {
           const Icon = stat.icon
           const animationDelay = { animationDelay: `${index * 100}ms` }
@@ -597,7 +584,7 @@ const StudentDashboard = () => {
               className="group relative overflow-hidden rounded-3xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl border border-white/30 dark:border-gray-700/40 p-4 sm:p-6 shadow-2xl hover:shadow-2xl transition-all duration-500 hover:scale-105"
               style={animationDelay}
             >
-              <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br ${stat.bgColor} rounded-3xl`} />
+              <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br ${stat.bgColor}/10 rounded-3xl`} />
               <div className="relative z-10">
                 <div className="flex items-center justify-between mb-3 sm:mb-4">
                   <div className={`p-2 sm:p-3 rounded-2xl bg-gradient-to-br ${stat.color} shadow-lg`}>
@@ -686,7 +673,7 @@ const StudentDashboard = () => {
           <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl border border-white/30 dark:border-gray-700/40 p-4 sm:p-6 shadow-2xl hover:shadow-2xl transition-all duration-300">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                Teacher Sessions
+                {t('student.teacherSessions.title', 'Teacher Sessions')}
               </h3>
               <Users className="h-5 w-5 text-purple-500" />
             </div>
@@ -731,8 +718,8 @@ const StudentDashboard = () => {
               ) : (
                 <div className="text-center py-4 text-gray-600 dark:text-gray-400">
                   <Users className="mx-auto h-8 w-8 mb-2" />
-                  <p className="text-sm">No teacher sessions</p>
-                  <p className="text-xs mt-1">Check back later for updates</p>
+                  <p className="text-sm">{t('student.teacherSessions.noSessions', 'No teacher sessions')}</p>
+                  <p className="text-xs mt-1">{t('student.teacherSessions.checkLater', 'Check back later for updates')}</p>
                 </div>
               )}
               {filteredTeacherSessions.length > 5 && (
@@ -740,9 +727,9 @@ const StudentDashboard = () => {
                   variant="outline"
                   size="sm"
                   className="w-full mt-2"
-                  onClick={() => (window.location.href = '/sessions?view=teachers')}
+                  onClick={() => navigate('/sessions?view=teachers')}
                 >
-                  View All Teacher Sessions
+                  {t('student.teacherSessions.viewAll', 'View All Teacher Sessions')}
                 </Button>
               )}
             </div>
@@ -752,7 +739,7 @@ const StudentDashboard = () => {
           <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl border border-white/30 dark:border-gray-700/40 p-4 sm:p-6 shadow-2xl hover:shadow-2xl transition-all duration-300">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                Your Upcoming Sessions
+                {t('student.recentSessions.title', 'Your Upcoming Sessions')}
               </h3>
               <Calendar className="h-5 w-5 text-blue-500" />
             </div>
@@ -794,14 +781,14 @@ const StudentDashboard = () => {
               ) : (
                 <div className="text-center py-4 text-gray-600 dark:text-gray-400">
                   <Calendar className="mx-auto h-8 w-8 mb-2" />
-                  <p className="text-sm">No upcoming sessions</p>
+                  <p className="text-sm">{t('student.recentSessions.noSessions', 'No upcoming sessions')}</p>
                   <Button
                     variant="outline"
                     size="sm"
                     className="mt-2"
-                    onClick={() => (window.location.href = '/sessions')}
+                    onClick={() => navigate('/sessions')}
                   >
-                    View All Sessions
+                    {t('student.recentSessions.viewAll', 'View All Sessions')}
                   </Button>
                 </div>
               )}
@@ -837,7 +824,7 @@ const StudentDashboard = () => {
                 className="lg:hidden"
               >
                 <Filter className="h-4 w-4 mr-2" />
-                Filters
+                {t('common.filters', 'Filters')}
               </Button>
 
               {/* Filters */}
@@ -869,11 +856,11 @@ const StudentDashboard = () => {
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
-                  <option value="all">All Status</option>
-                  <option value="new">New</option>
-                  <option value="watched">Watched</option>
-                  <option value="completed">Completed</option>
-                  <option value="processing">Processing</option>
+                  <option value="all">{t('student.status.all', 'All Status')}</option>
+                  <option value="new">{t('student.status.new', 'New')}</option>
+                  <option value="watched">{t('student.status.watched', 'Watched')}</option>
+                  <option value="completed">{t('student.status.completed', 'Completed')}</option>
+                  <option value="processing">{t('student.status.processing', 'Processing')}</option>
                 </select>
                 <select
                   className="block w-full sm:w-auto px-3 py-3 text-sm rounded-2xl bg-white/50 dark:bg-gray-700/50 border-white/40 dark:border-gray-600/40 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -908,8 +895,8 @@ const StudentDashboard = () => {
               </h3>
               <span className="text-sm text-gray-700 dark:text-gray-300">
                 {filteredRecordings.length} {t('common.items', 'items')}
-                {searchTerm && ` • matching "${searchTerm}"`}
-                {teacherFilter !== 'all' && ` • by ${teacherOptions.find(t => t.value === teacherFilter)?.label}`}
+                {searchTerm && ` • ${t('common.matching', 'matching')} "${searchTerm}"`}
+                {teacherFilter !== 'all' && ` • ${t('common.by', 'by')} ${teacherOptions.find(t => t.value === teacherFilter)?.label}`}
               </span>
             </div>
 
@@ -947,7 +934,7 @@ const StudentDashboard = () => {
                                   {recording.title}
                                   {recording.meetLink && (
                                     <span className="ml-2 px-2 py-1 text-xs bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 rounded-full">
-                                      Google Meet
+                                      {t('student.recording.googleMeet', 'Google Meet')}
                                     </span>
                                   )}
                                 </h4>
@@ -984,7 +971,7 @@ const StudentDashboard = () => {
                               <div className="flex items-center space-x-4 text-xs text-gray-600 dark:text-gray-400">
                                 <span className="flex items-center">
                                   <Eye className="h-3 w-3 mr-1" />
-                                  {recording.views || 0} views
+                                  {recording.views || 0} {t('student.recording.views', 'views')}
                                 </span>
                                 <span className="flex items-center">
                                   <Clock className="h-3 w-3 mr-1" />
@@ -1011,7 +998,7 @@ const StudentDashboard = () => {
                               {progress > 0 && progress < 100 && (
                                 <div className="mt-3">
                                   <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                    <span>Progress</span>
+                                    <span>{t('student.recording.progress', 'Progress')}</span>
                                     <span>{progress}%</span>
                                   </div>
                                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
@@ -1036,7 +1023,7 @@ const StudentDashboard = () => {
                                   ))}
                                   {recording.tags.length > 3 && (
                                     <span className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
-                                      +{recording.tags.length - 3} more
+                                      +{recording.tags.length - 3} {t('common.more', 'more')}
                                     </span>
                                   )}
                                 </div>
@@ -1055,7 +1042,9 @@ const StudentDashboard = () => {
                               ) : (
                                 <PlayCircle className="h-3 w-3 mr-1" />
                               )}
-                              {recording.recordingUrl?.includes('drive.google.com') ? 'Watch on Drive' : 'Watch'}
+                              {recording.recordingUrl?.includes('drive.google.com') 
+                                ? t('student.recording.watchOnDrive', 'Watch on Drive')
+                                : t('student.recording.watch', 'Watch')}
                             </Button>
                           </div>
                         </div>
@@ -1076,10 +1065,10 @@ const StudentDashboard = () => {
                       {isFetchingNextPage ? (
                         <>
                           <LoadingSpinner size="sm" className="mr-2" />
-                          Loading more recordings...
+                          {t('student.recordings.loadingMore', 'Loading more recordings...')}
                         </>
                       ) : (
-                        <>Load More Recordings</>
+                        t('student.recordings.loadMore', 'Load More Recordings')
                       )}
                     </Button>
                   </div>
@@ -1101,7 +1090,7 @@ const StudentDashboard = () => {
                   }
                 </p>
                 <Button
-                  onClick={() => (window.location.href = '/courses')}
+                  onClick={() => navigate('/courses')}
                   className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
                 >
                   <BookOpen className="h-4 w-4 mr-2" />

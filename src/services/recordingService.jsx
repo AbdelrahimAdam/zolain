@@ -280,16 +280,19 @@ export const recordingService = {
       console.log('🔄 Fetching student videos:', studentId);
       const { limit: resultLimit = 50, courseIds = [] } = options;
 
+      // If no course IDs, return empty (student not enrolled in any course)
+      if (!courseIds.length) {
+        console.log('ℹ️ No enrolled courses, returning empty video list');
+        return [];
+      }
+
       let q = query(
         collection(db, 'videos'),
         where('isPublished', '==', true),
+        where('courseId', 'in', courseIds), // only videos from enrolled courses
         orderBy('createdAt', 'desc'),
         limit(resultLimit)
       );
-
-      if (courseIds.length > 0) {
-        q = query(q, where('courseId', 'in', courseIds));
-      }
 
       const snapshot = await getDocs(q);
       const videos = snapshot.docs.map(doc => {

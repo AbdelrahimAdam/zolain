@@ -62,7 +62,6 @@ const StudentCourses = () => {
       setEnrolling(prev => ({ ...prev, [courseId]: true }))
       setError(null)
       await courseService.enrollStudent(courseId, studentId)
-      // After enrollment, navigate to the course detail page
       navigate(`/student/courses/${courseId}`)
     } catch (error) {
       console.error('Error enrolling in course:', error)
@@ -132,8 +131,8 @@ const StudentCourses = () => {
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+      {/* Stats - two columns on mobile */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <StatCard
           label="Enrolled"
           value={stats.enrolled}
@@ -198,8 +197,8 @@ const StudentCourses = () => {
         </div>
       )}
 
-      {/* Courses Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      {/* Courses Grid - two columns on mobile */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         {filteredCourses.map((course) => {
           const enrolled = isEnrolled(course.id)
           const isEnrolling = enrolling[course.id]
@@ -207,10 +206,10 @@ const StudentCourses = () => {
           return (
             <div
               key={course.id}
-              className="group bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-blue-100/50 dark:border-gray-700/50 overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105"
+              className="group bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-2xl border border-blue-100/50 dark:border-gray-700/50 overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105 flex flex-col h-full"
             >
               {/* Course Image */}
-              <div className="h-48 bg-gradient-to-br from-blue-500 to-cyan-500 relative">
+              <div className="h-28 sm:h-36 bg-gradient-to-br from-blue-500 to-cyan-500 relative">
                 {course.thumbnailUrl ? (
                   <img
                     src={course.thumbnailUrl}
@@ -219,55 +218,55 @@ const StudentCourses = () => {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <BookOpen className="h-12 w-12 text-white opacity-80" />
+                    <BookOpen className="h-8 w-8 text-white opacity-80" />
                   </div>
                 )}
-                <div className="absolute top-4 right-4">
+                <div className="absolute top-2 right-2">
                   {enrolled ? (
-                    <span className="px-3 py-1 bg-green-500 text-white rounded-full text-xs font-medium shadow-lg">
+                    <span className="px-2 py-0.5 bg-green-500 text-white rounded-full text-xs font-medium shadow-lg">
                       Enrolled
                     </span>
                   ) : (
-                    <span className="px-3 py-1 bg-blue-500 text-white rounded-full text-xs font-medium shadow-lg">
+                    <span className="px-2 py-0.5 bg-blue-500 text-white rounded-full text-xs font-medium shadow-lg">
                       Available
                     </span>
                   )}
                 </div>
-                <div className="absolute bottom-4 left-4">
-                  <span className="px-3 py-1 bg-black/50 backdrop-blur-sm text-white rounded-full text-sm">
+                <div className="absolute bottom-2 left-2">
+                  <span className="px-2 py-0.5 bg-black/50 backdrop-blur-sm text-white rounded-full text-xs">
                     {formatDuration(course.duration)}
                   </span>
                 </div>
               </div>
 
               {/* Course Content */}
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="font-semibold text-gray-900 dark:text-white text-lg line-clamp-2 flex-1">
+              <div className="p-3 sm:p-4 flex-1 flex flex-col">
+                <div className="flex items-start justify-between mb-1">
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base line-clamp-2 flex-1">
                     {course.title}
                   </h3>
                   {course.isFeatured && (
-                    <Star className="h-5 w-5 text-yellow-500 fill-current ml-2" />
+                    <Star className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500 fill-current ml-1 flex-shrink-0" />
                   )}
                 </div>
 
-                <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">
+                <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-2 line-clamp-2 flex-1">
                   {course.description || 'No description provided'}
                 </p>
 
-                <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
-                  <div className="flex items-center space-x-4">
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  <div className="flex items-center space-x-2">
                     <span className="flex items-center">
-                      <Users className="h-4 w-4 mr-1" />
+                      <Users className="h-3 w-3 mr-1" />
                       {course.studentsCount || 0}
                     </span>
                     <span className="flex items-center">
-                      <Clock className="h-4 w-4 mr-1" />
-                      {course.lessonsCount || 0} lessons
+                      <Clock className="h-3 w-3 mr-1" />
+                      {course.lessonsCount || 0}
                     </span>
                   </div>
                   {course.level && (
-                    <span className={`px-2 py-1 rounded-full text-xs ${
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${
                       course.level === 'beginner' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
                       course.level === 'intermediate' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
                       'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
@@ -277,42 +276,43 @@ const StudentCourses = () => {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mt-auto">
                   <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                    <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
                       {course.instructorName?.charAt(0) || 'I'}
                     </div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[100px]">
+                    <span className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-[60px] sm:max-w-[80px]">
                       {course.instructorName}
                     </span>
                   </div>
 
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-1">
                     {enrolled ? (
                       <Button 
-                        size="sm" 
+                        size="xs"
                         onClick={() => handleContinueCourse(course.id)}
-                        className="bg-gradient-to-r from-green-500 to-emerald-500 text-white"
+                        className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs px-2 py-1"
                       >
-                        <PlayCircle className="h-4 w-4 mr-1" />
-                        Continue
+                        <PlayCircle className="h-3 w-3 mr-1" />
+                        <span className="hidden sm:inline">Continue</span>
+                        <span className="sm:hidden">Go</span>
                       </Button>
                     ) : (
                       <Button 
-                        size="sm"
+                        size="xs"
                         onClick={() => handleEnrollCourse(course.id)}
                         disabled={isEnrolling}
-                        className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white"
+                        className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs px-2 py-1"
                       >
                         {isEnrolling ? (
-                          <LoadingSpinner size="sm" className="mr-1" />
+                          <LoadingSpinner size="xs" className="mr-1" />
                         ) : (
-                          'Enroll Now'
+                          'Enroll'
                         )}
                       </Button>
                     )}
-                    <Button variant="outline" size="sm" className="border-blue-200 dark:border-gray-600">
-                      <Bookmark className="h-4 w-4" />
+                    <Button variant="outline" size="xs" className="border-blue-200 dark:border-gray-600 px-2 py-1">
+                      <Bookmark className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
@@ -341,14 +341,14 @@ const StudentCourses = () => {
 }
 
 const StatCard = ({ label, value, icon: Icon, color }) => (
-  <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl border border-blue-100/50 dark:border-gray-700/50 p-6 shadow-lg hover:shadow-xl transition group">
+  <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl border border-blue-100/50 dark:border-gray-700/50 p-4 sm:p-6 shadow-lg hover:shadow-xl transition group">
     <div className="flex items-center justify-between">
       <div>
-        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{label}</p>
-        <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
+        <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">{label}</p>
+        <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
       </div>
-      <div className={`p-3 rounded-xl bg-gradient-to-br ${color} shadow-lg`}>
-        <Icon className="h-6 w-6 text-white" />
+      <div className={`p-2 sm:p-3 rounded-xl bg-gradient-to-br ${color} shadow-lg`}>
+        <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
       </div>
     </div>
   </div>

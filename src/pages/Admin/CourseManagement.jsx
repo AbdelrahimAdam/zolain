@@ -1,4 +1,3 @@
-// pages/admin/CourseManagement.js
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -102,11 +101,13 @@ const CourseManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-blue-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Course Management</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+            Course Management
+          </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Manage all courses and learning content
           </p>
@@ -120,16 +121,16 @@ const CourseManagement = () => {
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <StatCard label="Total Courses" value={stats.total} icon={BookOpen} color="blue" />
-        <StatCard label="Published" value={stats.published} icon={CheckCircle} color="green" />
-        <StatCard label="Draft" value={stats.draft} icon={Clock} color="yellow" />
-        <StatCard label="Total Students" value={stats.totalStudents} icon={Users} color="purple" />
+      {/* Stats - two columns on mobile */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-4">
+        <StatCard label="Total Courses" value={stats.total} icon={BookOpen} color="from-blue-500 to-cyan-500" />
+        <StatCard label="Published" value={stats.published} icon={CheckCircle} color="from-green-500 to-emerald-500" />
+        <StatCard label="Draft" value={stats.draft} icon={Clock} color="from-yellow-500 to-orange-500" />
+        <StatCard label="Total Students" value={stats.totalStudents} icon={Users} color="from-purple-500 to-pink-500" />
       </div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+      <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl border border-blue-100/50 dark:border-gray-700/50 p-4 sm:p-6 shadow-2xl">
         <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
           <div className="flex-1">
             <div className="relative">
@@ -139,21 +140,21 @@ const CourseManagement = () => {
                 placeholder="Search courses..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-blue-200 dark:border-gray-600 bg-white/50 dark:bg-gray-700/50 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
-          <div className="flex space-x-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-3 rounded-xl border border-blue-200 dark:border-gray-600 bg-white/50 dark:bg-gray-700/50 focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Status</option>
               <option value="published">Published</option>
               <option value="draft">Draft</option>
             </select>
-            <Button variant="outline">
+            <Button variant="outline" className="border-blue-200 dark:border-gray-600">
               <Filter className="h-4 w-4 mr-2" />
               Filters
             </Button>
@@ -161,8 +162,8 @@ const CourseManagement = () => {
         </div>
       </div>
 
-      {/* Courses Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+      {/* Courses Grid - two columns on mobile */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-2 xl:grid-cols-3">
         {filteredCourses.map((course) => (
           <CourseCard
             key={course.id}
@@ -177,7 +178,7 @@ const CourseManagement = () => {
       </div>
 
       {filteredCourses.length === 0 && (
-        <div className="text-center py-12">
+        <div className="text-center py-12 bg-white/50 dark:bg-gray-800/50 rounded-3xl border border-blue-100/50 dark:border-gray-700/50">
           <BookOpen className="mx-auto h-16 w-16 text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             No courses found
@@ -201,36 +202,27 @@ const CourseManagement = () => {
   )
 }
 
-// Stat Card Component
-const StatCard = ({ label, value, icon: Icon, color }) => {
-  const colorClasses = {
-    blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
-    green: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
-    yellow: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400',
-    purple: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
-  }
-
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{label}</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
-        </div>
-        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
-          <Icon className="h-6 w-6" />
-        </div>
+// Stat Card Component (responsive)
+const StatCard = ({ label, value, icon: Icon, color }) => (
+  <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl border border-blue-100/50 dark:border-gray-700/50 p-4 sm:p-6 shadow-lg hover:shadow-xl transition group">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">{label}</p>
+        <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</p>
+      </div>
+      <div className={`p-2 sm:p-3 rounded-xl bg-gradient-to-br ${color} shadow-lg`}>
+        <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
       </div>
     </div>
-  )
-}
+  </div>
+)
 
-// Course Card Component
+// Course Card Component (responsive)
 const CourseCard = ({ course, actionLoading, onPublish, onUnpublish, onEdit, onView }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-all duration-300">
+    <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-2xl border border-blue-100/50 dark:border-gray-700/50 overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105 flex flex-col h-full">
       {/* Course Image */}
-      <div className="h-48 bg-gradient-to-br from-purple-500 to-pink-500 relative">
+      <div className="h-28 sm:h-36 bg-gradient-to-br from-purple-500 to-pink-500 relative">
         {course.thumbnailUrl ? (
           <img
             src={course.thumbnailUrl}
@@ -239,11 +231,11 @@ const CourseCard = ({ course, actionLoading, onPublish, onUnpublish, onEdit, onV
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <BookOpen className="h-12 w-12 text-white opacity-80" />
+            <BookOpen className="h-8 w-8 text-white opacity-80" />
           </div>
         )}
-        <div className="absolute top-4 right-4">
-          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+        <div className="absolute top-2 right-2">
+          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
             course.isPublished
               ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
               : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
@@ -254,63 +246,58 @@ const CourseCard = ({ course, actionLoading, onPublish, onUnpublish, onEdit, onV
       </div>
 
       {/* Course Content */}
-      <div className="p-6">
-        <div className="flex items-start justify-between mb-3">
-          <h3 className="font-semibold text-gray-900 dark:text-white text-lg line-clamp-2">
-            {course.title}
-          </h3>
-        </div>
-
-        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">
+      <div className="p-3 sm:p-4 flex-1 flex flex-col">
+        <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base line-clamp-2 mb-1">
+          {course.title}
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-2 line-clamp-2 flex-1">
           {course.description || 'No description provided'}
         </p>
 
-        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
-          <div className="flex items-center space-x-4">
-            <span className="flex items-center">
-              <Users className="h-4 w-4 mr-1" />
-              {course.studentsEnrolled || 0} students
-            </span>
-            <span className="flex items-center">
-              <Calendar className="h-4 w-4 mr-1" />
-              {course.createdAt ? new Date(course.createdAt).toLocaleDateString() : 'N/A'}
-            </span>
-          </div>
+        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+          <span className="flex items-center">
+            <Users className="h-3 w-3 mr-1" />
+            {course.studentsEnrolled || 0}
+          </span>
+          <span className="flex items-center">
+            <Calendar className="h-3 w-3 mr-1" />
+            {course.createdAt ? new Date(course.createdAt).toLocaleDateString() : 'N/A'}
+          </span>
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mt-auto">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+            <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
               {course.instructorName?.charAt(0) || 'I'}
             </div>
-            <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[120px]">
+            <span className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-[60px]">
               {course.instructorName}
             </span>
           </div>
 
-          <div className="flex space-x-2">
-            <Button size="sm" variant="outline" onClick={onView}>
-              <Eye className="h-4 w-4" />
+          <div className="flex space-x-1">
+            <Button size="xs" variant="outline" onClick={onView}>
+              <Eye className="h-3 w-3" />
             </Button>
-            <Button size="sm" variant="outline" onClick={onEdit}>
-              <Edit className="h-4 w-4" />
+            <Button size="xs" variant="outline" onClick={onEdit}>
+              <Edit className="h-3 w-3" />
             </Button>
             {course.isPublished ? (
               <Button
-                size="sm"
+                size="xs"
                 variant="outline"
                 onClick={() => onUnpublish(course.id)}
                 disabled={actionLoading[course.id]}
               >
-                <XCircle className="h-4 w-4" />
+                <XCircle className="h-3 w-3" />
               </Button>
             ) : (
               <Button
-                size="sm"
+                size="xs"
                 onClick={() => onPublish(course.id)}
                 disabled={actionLoading[course.id]}
               >
-                <CheckCircle className="h-4 w-4" />
+                <CheckCircle className="h-3 w-3" />
               </Button>
             )}
           </div>

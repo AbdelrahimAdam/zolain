@@ -400,32 +400,8 @@ const Select = ({
   )
 }
 
-// Prop Types
 Select.propTypes = {
-  // label: PropTypes.string,
-  // options: PropTypes.arrayOf(PropTypes.shape({
-  //   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-  //   label: PropTypes.string.isRequired,
-  //   disabled: PropTypes.bool,
-  //   description: PropTypes.string,
-  //   hidden: PropTypes.bool
-  // })),
-  // value: PropTypes.oneOfType([
-  //   PropTypes.string,
-  //   PropTypes.number,
-  //   PropTypes.array
-  // ]),
-  // onChange: PropTypes.func,
-  // placeholder: PropTypes.string,
-  // disabled: PropTypes.bool,
-  // error: PropTypes.string,
-  // required: PropTypes.bool,
-  // searchable: PropTypes.bool,
-  // multi: PropTypes.bool,
-  // className: PropTypes.string,
-  // icon: PropTypes.elementType,
-  // size: PropTypes.oneOf(['sm', 'md', 'lg']),
-  // variant: PropTypes.oneOf(['default', 'outline', 'filled'])
+  // ... (optional prop types)
 }
 
 export default Select

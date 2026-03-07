@@ -18,14 +18,46 @@ import {
   Globe,
   User,
   BookOpen,
-  Youtube
+  Youtube,
+  Layers
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth.jsx'
 import Button from '../UI/Button.jsx'
 import Select from '../UI/Select.jsx'
 import { recordingService, isValidYouTubeUrl, getYouTubeEmbedUrl } from '../../services/recordingService.jsx'
+import { courseService } from '../../services/courseService.jsx'
 
-// Reusable Input components (same as before, but we can keep them here)
+// Helper: fetch YouTube video info using public API (requires API key)
+const fetchYouTubeVideoInfo = async (videoId) => {
+  const apiKey = process.env.REACT_APP_YOUTUBE_API_KEY;
+  if (!apiKey) return null;
+  try {
+    const response = await fetch(
+      `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,snippet&id=${videoId}&key=${apiKey}`
+    );
+    const data = await response.json();
+    if (data.items && data.items[0]) {
+      const duration = data.items[0].contentDetails.duration; // ISO 8601 duration
+      const title = data.items[0].snippet.title;
+      return { duration, title };
+    }
+    return null;
+  } catch (err) {
+    console.error('Error fetching YouTube info:', err);
+    return null;
+  }
+};
+
+// Convert ISO 8601 duration to seconds
+const isoDurationToSeconds = (iso) => {
+  const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!match) return 0;
+  const hours = parseInt(match[1]) || 0;
+  const minutes = parseInt(match[2]) || 0;
+  const seconds = parseInt(match[3]) || 0;
+  return hours * 3600 + minutes * 60 + seconds;
+};
+
 const CustomInput = React.forwardRef(({ label, type = 'text', placeholder, error, disabled, icon: Icon, suffix, required, autoFocus = false, ...props }, ref) => (
   <div className="space-y-2">
     {label && (
@@ -48,7 +80,7 @@ const CustomInput = React.forwardRef(({ label, type = 'text', placeholder, error
     </div>
     {error && <p className="text-sm text-red-600 dark:text-red-400 mt-1">{error}</p>}
   </div>
-))
+));
 
 const CustomTextArea = React.forwardRef(({ label, placeholder, error, disabled, rows = 3, required, autoFocus = false, ...props }, ref) => (
   <div className="space-y-2">
@@ -68,7 +100,7 @@ const CustomTextArea = React.forwardRef(({ label, placeholder, error, disabled, 
     />
     {error && <p className="text-sm text-red-600 dark:text-red-400 mt-1">{error}</p>}
   </div>
-))
+));
 
 const CreateLessonModal = ({ onClose, onSuccess, courseId = null, sectionId = null, initialData = {} }) => {
   const { t } = useTranslation()
@@ -79,8 +111,11 @@ const CreateLessonModal = ({ onClose, onSuccess, courseId = null, sectionId = nu
   const [success, setSuccess] = useState('')
   const [uploadProgress, setUploadProgress] = useState(0)
   const [youtubePreview, setYoutubePreview] = useState(null)
+  const [availableCourses, setAvailableCourses] = useState([])
+  const [availableSections, setAvailableSections] = useState([])
+  const [fetchingDuration, setFetchingDuration] = useState(false)
 
-  const { register, handleSubmit, formState: { errors, isDirty, isValid }, watch, setValue, reset } = useForm({
+  const { register, handleSubmit, formState: { errors, isDirty, isValid }, watch, setValue, getValues } = useForm({
     mode: 'onChange',
     defaultValues: {
       title: initialData.title || '',
@@ -92,13 +127,48 @@ const CreateLessonModal = ({ onClose, onSuccess, courseId = null, sectionId = nu
       tags: Array.isArray(initialData.tags) ? initialData.tags.join(', ') : (initialData.tags || ''),
       isFree: initialData.isFree ?? true,
       visibility: initialData.visibility || 'enrolled', // enrolled, public, private
+      courseId: initialData.courseId || courseId || 'general',
+      sectionId: initialData.sectionId || sectionId || '',
       ...initialData
     }
   })
 
   const watchedValues = watch()
+  const selectedCourseId = watchedValues.courseId
 
-  // Handle YouTube URL change and preview
+  // Load courses taught by this teacher
+  useEffect(() => {
+    const loadCourses = async () => {
+      if (!user?.uid) return;
+      try {
+        const courses = await courseService.getCoursesByInstructor(user.uid, { includeUnpublished: true });
+        setAvailableCourses(courses);
+      } catch (err) {
+        console.error('Error loading courses:', err);
+      }
+    };
+    loadCourses();
+  }, [user]);
+
+  // Load sections when course changes
+  useEffect(() => {
+    const loadSections = async () => {
+      if (selectedCourseId && selectedCourseId !== 'general') {
+        try {
+          const course = await courseService.getCourseById(selectedCourseId);
+          setAvailableSections(course?.sections || []);
+        } catch (err) {
+          console.error('Error loading sections:', err);
+          setAvailableSections([]);
+        }
+      } else {
+        setAvailableSections([]);
+      }
+    };
+    loadSections();
+  }, [selectedCourseId]);
+
+  // Handle YouTube URL change and preview + auto‑fetch duration
   useEffect(() => {
     if (watchedValues.videoUrl) {
       const videoId = recordingService.youtubeWorkflow.extractYouTubeId(watchedValues.videoUrl);
@@ -109,13 +179,28 @@ const CreateLessonModal = ({ onClose, onSuccess, courseId = null, sectionId = nu
           embedUrl: recordingService.youtubeWorkflow.getYouTubeEmbedUrl(watchedValues.videoUrl),
           thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
         });
+        // Auto‑fetch duration
+        const autoFetch = async () => {
+          setFetchingDuration(true);
+          const info = await fetchYouTubeVideoInfo(videoId);
+          if (info) {
+            const durationSec = isoDurationToSeconds(info.duration);
+            setValue('duration', durationSec, { shouldValidate: true });
+            // Optionally set title if empty
+            if (!getValues('title') && info.title) {
+              setValue('title', info.title);
+            }
+          }
+          setFetchingDuration(false);
+        };
+        autoFetch();
       } else {
         setYoutubePreview({ isValid: false, error: 'Invalid YouTube URL' });
       }
     } else {
       setYoutubePreview(null);
     }
-  }, [watchedValues.videoUrl]);
+  }, [watchedValues.videoUrl, setValue, getValues]);
 
   const handleDurationChange = useCallback((e) => {
     const minutes = parseInt(e.target.value) || 0;
@@ -146,8 +231,8 @@ const CreateLessonModal = ({ onClose, onSuccess, courseId = null, sectionId = nu
         visibility: videoData.visibility,
         instructorId: user.uid,
         instructorName: user.displayName || user.email,
-        courseId: courseId || 'general',
-        sectionId: sectionId,
+        courseId: videoData.courseId || 'general',
+        sectionId: videoData.sectionId || null,
         isPublished: videoData.visibility === 'public'
       };
       return await recordingService.createVideo(payload);
@@ -206,6 +291,18 @@ const CreateLessonModal = ({ onClose, onSuccess, courseId = null, sectionId = nu
     { value: 'public', label: 'Public (visible to all)' },
     { value: 'private', label: 'Private (draft)' }
   ], []);
+
+  const courseOptions = useMemo(() => {
+    const opts = [{ value: 'general', label: 'General (no course)' }];
+    availableCourses.forEach(c => {
+      opts.push({ value: c.id, label: c.title });
+    });
+    return opts;
+  }, [availableCourses]);
+
+  const sectionOptions = useMemo(() => {
+    return availableSections.map(s => ({ value: s.id, label: s.title }));
+  }, [availableSections]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -327,6 +424,7 @@ const CreateLessonModal = ({ onClose, onSuccess, courseId = null, sectionId = nu
                     <div className="flex-1">
                       <p className="text-sm font-medium text-green-700 dark:text-green-300 flex items-center">
                         <CheckCircle className="h-4 w-4 mr-1" /> Valid YouTube URL
+                        {fetchingDuration && <span className="ml-2 text-xs text-blue-500"> (fetching duration...)</span>}
                       </p>
                       <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Video ID: {youtubePreview.videoId}</p>
                       <a href={watchedValues.videoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-xs text-blue-600 hover:underline mt-2">
@@ -338,6 +436,35 @@ const CreateLessonModal = ({ onClose, onSuccess, courseId = null, sectionId = nu
               )}
             </div>
 
+            {/* Course Selection */}
+            <div className="lg:col-span-2">
+              <Select
+                label="Course"
+                options={courseOptions}
+                value={watchedValues.courseId}
+                onChange={(value) => setValue('courseId', value)}
+                disabled={isSubmitting}
+                icon={BookOpen}
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Select the course this lesson belongs to (optional).
+              </p>
+            </div>
+
+            {/* Section Selection (if course has sections) */}
+            {sectionOptions.length > 0 && (
+              <div className="lg:col-span-2">
+                <Select
+                  label="Section"
+                  options={[{ value: '', label: 'None' }, ...sectionOptions]}
+                  value={watchedValues.sectionId}
+                  onChange={(value) => setValue('sectionId', value)}
+                  disabled={isSubmitting}
+                  icon={Layers}
+                />
+              </div>
+            )}
+
             {/* Duration (minutes) */}
             <div>
               <CustomInput
@@ -346,12 +473,13 @@ const CreateLessonModal = ({ onClose, onSuccess, courseId = null, sectionId = nu
                 min="1"
                 placeholder="e.g. 15"
                 error={errors.duration?.message}
-                disabled={isSubmitting}
+                disabled={isSubmitting || fetchingDuration}
                 suffix="min"
                 icon={Clock}
                 {...register('duration', {
                   required: 'Duration is required',
-                  min: { value: 1, message: 'Minimum 1 minute' }
+                  min: { value: 1, message: 'Minimum 1 minute' },
+                  valueAsNumber: true
                 })}
                 onChange={handleDurationChange}
               />
@@ -407,6 +535,25 @@ const CreateLessonModal = ({ onClose, onSuccess, courseId = null, sectionId = nu
               onChange={(value) => setValue('visibility', value)}
               disabled={isSubmitting}
             />
+          </div>
+
+          {/* Instructor Info (read‑only) */}
+          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+            <h4 className="font-medium text-gray-900 dark:text-white mb-2 flex items-center">
+              <User className="h-4 w-4 mr-2" /> Instructor
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div className="flex items-center space-x-2">
+                <User className="h-4 w-4 text-gray-400" />
+                <span className="text-gray-600 dark:text-gray-300">
+                  {user?.displayName || user?.email}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Globe className="h-4 w-4 text-gray-400" />
+                <span className="text-gray-600 dark:text-gray-300">{user?.email}</span>
+              </div>
+            </div>
           </div>
 
           {/* Actions */}

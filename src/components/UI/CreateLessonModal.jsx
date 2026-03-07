@@ -276,7 +276,7 @@ const CreateLessonModal = ({ onClose, onSuccess, courseId = null, sectionId = nu
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
       <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 rounded-t-2xl z-10">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 rounded-t-2xl z-10">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
               <Youtube className="h-6 w-6 text-red-600 dark:text-red-400" />
@@ -301,7 +301,7 @@ const CreateLessonModal = ({ onClose, onSuccess, courseId = null, sectionId = nu
 
         {/* Progress Bar */}
         {isSubmitting && (
-          <div className="px-6 pt-4">
+          <div className="px-4 sm:px-6 pt-4">
             <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <div
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
@@ -316,7 +316,7 @@ const CreateLessonModal = ({ onClose, onSuccess, courseId = null, sectionId = nu
 
         {/* Messages */}
         {error && (
-          <div className="mx-6 mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-start space-x-3">
+          <div className="mx-4 sm:mx-6 mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-start space-x-3">
             <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
             <p className="text-red-700 dark:text-red-300 text-sm flex-1">{error}</p>
             <button onClick={() => setError('')} className="text-red-500 hover:text-red-700">
@@ -326,14 +326,14 @@ const CreateLessonModal = ({ onClose, onSuccess, courseId = null, sectionId = nu
         )}
 
         {success && (
-          <div className="mx-6 mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl flex items-start space-x-3">
+          <div className="mx-4 sm:mx-6 mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl flex items-start space-x-3">
             <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
             <p className="text-green-700 dark:text-green-300 text-sm flex-1">{success}</p>
           </div>
         )}
 
         {/* YouTube Upload Steps */}
-        <div className="px-6 pt-4">
+        <div className="px-4 sm:px-6 pt-4">
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
             <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-3">YouTube Upload Steps</h4>
             <div className="space-y-2">
@@ -350,7 +350,7 @@ const CreateLessonModal = ({ onClose, onSuccess, courseId = null, sectionId = nu
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="p-4 sm:p-6 space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Title */}
             <div className="lg:col-span-2">
@@ -395,11 +395,11 @@ const CreateLessonModal = ({ onClose, onSuccess, courseId = null, sectionId = nu
 
               {/* YouTube Preview */}
               {youtubePreview?.isValid && (
-                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl flex items-start space-x-4">
+                <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-4">
                   <img
                     src={youtubePreview.thumbnail}
                     alt="Preview"
-                    className="w-32 h-20 object-cover rounded-lg"
+                    className="w-full sm:w-32 h-20 object-cover rounded-lg"
                     onError={(e) => { e.target.src = 'https://via.placeholder.com/320x180?text=No+Thumbnail' }}
                   />
                   <div className="flex-1">

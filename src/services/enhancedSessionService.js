@@ -11,9 +11,12 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { sessionService } from './sessionService';
+import { sessionService } from './sessionService'; // import base
 
 export const enhancedSessionService = {
+  // Re‑export base methods
+  ...sessionService,
+
   // Create session with Google Meet integration
   createMeetSession: async (sessionData) => {
     try {
@@ -80,7 +83,7 @@ export const enhancedSessionService = {
     }
   },
 
-  // Get sessions for a specific teacher using Firestore query
+  // Get sessions for a specific teacher
   getTeacherSessions: async (teacherId, options = {}) => {
     try {
       console.log('🔄 Fetching teacher sessions:', teacherId);
@@ -97,12 +100,10 @@ export const enhancedSessionService = {
         orderBy('date', 'desc')
       );
 
-      // Apply status filter
       if (status !== 'all') {
         sessionsQuery = query(sessionsQuery, where('status', '==', status));
       }
 
-      // Apply date range filter
       if (dateRange === 'upcoming') {
         sessionsQuery = query(sessionsQuery, where('date', '>=', Timestamp.now()));
       } else if (dateRange === 'past') {
@@ -174,21 +175,6 @@ export const enhancedSessionService = {
       throw new Error(`Failed to fetch teacher analytics: ${error.message}`);
     }
   },
-
-  // Update session status
-  updateSessionStatus: async (sessionId, status) => {
-    return sessionService.updateSessionStatus(sessionId, status);
-  },
-
-  // Get session by ID
-  getSessionById: async (sessionId) => {
-    return sessionService.getSessionById(sessionId);
-  },
-
-  // Add participant to session
-  addParticipant: async (sessionId, participantId, participantData = {}) => {
-    return sessionService.addParticipant(sessionId, participantId, participantData);
-  }
 };
 
 // Helper function to generate Meet-like ID

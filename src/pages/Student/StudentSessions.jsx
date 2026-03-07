@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../hooks/useAuth'
-import { sessionService } from '../../services'
+import { sessionService, courseService } from '../../services'
 import Button from '../../components/UI/Button.jsx'
 import LoadingSpinner from '../../components/UI/LoadingSpinner.jsx'
 import {
@@ -37,8 +37,18 @@ const StudentSessions = () => {
   const loadSessions = async () => {
     try {
       setLoading(true)
-      const sessionsData = await sessionService.getPublicSessions()
-      setSessions(sessionsData)
+      // Get enrolled courses first
+      const enrolledCourses = await courseService.getEnrolledCourses(studentId)
+      const courseIds = enrolledCourses.map(c => c.id)
+
+      if (courseIds.length === 0) {
+        setSessions([])
+        return
+      }
+
+      // Fetch sessions from enrolled courses (all statuses)
+      const allSessions = await sessionService.getSessionsForStudent(studentId, { courseIds, limit: 50 })
+      setSessions(allSessions)
     } catch (error) {
       console.error('Error loading sessions:', error)
     } finally {
