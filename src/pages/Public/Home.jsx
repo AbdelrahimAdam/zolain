@@ -5,7 +5,7 @@ import {
   GraduationCap, FileText, Plane, Scale, Microscope, Languages,
   Headphones, Calendar, Facebook, MessageCircle, Mail,
   Scale as ScaleIcon, Mic, FileText as FileTextIcon, MessageSquare,
-  Briefcase, MapPin, Search, PenTool, Book
+  Briefcase, MapPin, Search, PenTool, Book, Youtube   // Youtube imported here
 } from 'lucide-react';
 import Button from '../../components/UI/Button';
 
@@ -484,6 +484,33 @@ const Home = () => {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      {/* Social Media Links - Facebook & YouTube */}
+      <section className="container mx-auto px-2 sm:px-4 py-8">
+        <h2 className="text-2xl md:text-3xl font-bold text-center mb-6 text-gray-900 dark:text-white">
+          Connect With Us
+        </h2>
+        <div className="flex justify-center items-center gap-6">
+          <a
+            href="https://www.facebook.com/share/1DVCnhYvke/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-blue-600/10 hover:bg-blue-600/20 p-4 rounded-full transition-transform hover:scale-110"
+            aria-label="Facebook"
+          >
+            <Facebook className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+          </a>
+          <a
+            href="https://youtube.com/@zolainforlanguagetranslationan?si=ZPeYlG7jH-eCzthe"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-red-600/10 hover:bg-red-600/20 p-4 rounded-full transition-transform hover:scale-110"
+            aria-label="YouTube"
+          >
+            <Youtube className="h-8 w-8 text-red-600 dark:text-red-400" />
+          </a>
         </div>
       </section>
     </div>
