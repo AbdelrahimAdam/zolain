@@ -25,10 +25,11 @@ const PublicLayout = ({ children }) => {
 
   const closeMenu = () => setIsMenuOpen(false);
 
-  const facebookUrl = 'https://facebook.com/zolain';
+  // ✅ Updated Facebook and YouTube URLs
+  const facebookUrl = 'https://www.facebook.com/share/1DVCnhYvke/';
   const whatsappNumber = '249903806123';
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=Hello%20Zolain%2C%20I%27m%20interested%20in%20your%20courses%20and%20payment%20options.`;
-  const youtubeUrl = 'https://youtube.com/@zolain';
+  const youtubeUrl = 'https://youtube.com/@zolainforlanguagetranslationan?si=ZPeYlG7jH-eCzthe';
   const telegramUrl = 'https://t.me/zolain';
   const instagramUrl = 'https://instagram.com/zolain';
 
